@@ -3,7 +3,7 @@ namespace Jy\Common\Valid\Valid;
 use Jy\Common\Valid\Contract\FilterInterface;
 //各种变量的过滤
 class Filter implements FilterInterface {
-    private $_debug = 2;
+    private $_debug = 1;
     private $_delimiter = ":";
     private $_rangeDelimit = ",";
 
@@ -189,7 +189,6 @@ class Filter implements FilterInterface {
         }
 
         if($max && $min){
-            var_dump($max);var_dump($min);
             if($length >= $min && $length <=$max){
                 return 1;
             }

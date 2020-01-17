@@ -53,8 +53,10 @@ class Dispatcher
         }
 
         // heredoc
-        //$annotation = \Jy\App::$app->reflect->resolveClass($namespace, $action, "method");
-        //print_r($annotation);
+        $annotation = \Jy\App::$app->reflect->resolveClass($namespace, $action, "method");
+        if($annotation && isset($annotation['valid']) && $annotation['valid']){
+            \Jy\Common\Valid\Facades\Valid::match(\Jy\App::$app->request->getArgs(),$annotation['valid']);
+        }
 
         // hook
         $result = call_user_func_array([$controller, $action], $args);

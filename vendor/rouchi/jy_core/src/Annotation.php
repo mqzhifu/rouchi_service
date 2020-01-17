@@ -1,5 +1,5 @@
 <?php
-namespace Jy\Jy;
+namespace Jy;
 
 
 class Annotation
