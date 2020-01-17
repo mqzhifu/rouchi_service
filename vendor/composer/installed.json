@@ -1,0 +1,182 @@
+[
+    {
+        "name": "rouchi/jy_common",
+        "version": "v0.6.0",
+        "version_normalized": "0.6.0.0",
+        "source": {
+            "type": "git",
+            "url": "ssh://git@gitlab.rouchi.com:10022/php_sevice_group/jy_common.git",
+            "reference": "29a28b39d09fd7c4c34a0b91000ef3a03ff879ac"
+        },
+        "dist": {
+            "type": "tar",
+            "url": "http://packagist.rouchi.com/dist/rouchi/jy_common/rouchi-jy_common-v0.6.0-d9fc95.tar",
+            "reference": "29a28b39d09fd7c4c34a0b91000ef3a03ff879ac",
+            "shasum": "f7d5fc3b118d31fd684d8657be91f27451d39652"
+        },
+        "require": {
+            "php": "^7.2"
+        },
+        "time": "2020-01-15T08:18:58+00:00",
+        "type": "component",
+        "installation-source": "dist",
+        "autoload": {
+            "psr-4": {
+                "Jy\\Common\\": "src/"
+            }
+        },
+        "license": [
+            "BSD-3-Clause"
+        ],
+        "authors": [
+            {
+                "name": "rouchi-service-common-component",
+                "email": "rouchi-service-team@rouchi.com"
+            }
+        ],
+        "description": "rouchi common componet"
+    },
+    {
+        "name": "rouchi/jy_config",
+        "version": "v0.0.5",
+        "version_normalized": "0.0.5.0",
+        "source": {
+            "type": "git",
+            "url": "ssh://git@gitlab.rouchi.com:10022/php_sevice_group/jy_config.git",
+            "reference": "3323a5280bcc69d68e7ac17ec3d315ad5fe1826c"
+        },
+        "dist": {
+            "type": "tar",
+            "url": "http://packagist.rouchi.com/dist/rouchi/jy_config/rouchi-jy_config-v0.0.5-1bc873.tar",
+            "reference": "3323a5280bcc69d68e7ac17ec3d315ad5fe1826c",
+            "shasum": "581923f2f0f92c84a49e1a679021e59b0527cef8"
+        },
+        "require": {
+            "php": "^7.2"
+        },
+        "time": "2020-01-08T07:22:36+00:00",
+        "type": "component",
+        "installation-source": "dist",
+        "autoload": {
+            "psr-4": {
+                "Jy\\Config\\": "src/"
+            }
+        },
+        "license": [
+            "BSD-3-Clause"
+        ],
+        "authors": [
+            {
+                "name": "rouchi-service-templete-config-component",
+                "email": "rouchi-service-team@rouchi.com"
+            }
+        ],
+        "description": "rouchi templete config componet"
+    },
+    {
+        "name": "rouchi/jy_core",
+        "version": "v0.1.7",
+        "version_normalized": "0.1.7.0",
+        "source": {
+            "type": "git",
+            "url": "ssh://git@gitlab.rouchi.com:10022/php_sevice_group/jy_core.git",
+            "reference": "0c39dcd7c8880fdf6c0664197b0c38aacb0f1156"
+        },
+        "dist": {
+            "type": "tar",
+            "url": "http://packagist.rouchi.com/dist/rouchi/jy_core/rouchi-jy_core-v0.1.7-2f9928.tar",
+            "reference": "0c39dcd7c8880fdf6c0664197b0c38aacb0f1156",
+            "shasum": "340edb33ed1931a9ccf3c2513630f3fd25e8ef1c"
+        },
+        "require": {
+            "php": "^7.2"
+        },
+        "time": "2020-01-13T10:47:13+00:00",
+        "type": "component",
+        "installation-source": "dist",
+        "autoload": {
+            "psr-4": {
+                "Jy\\": "src/"
+            }
+        },
+        "license": [
+            "BSD-3-Clause"
+        ],
+        "authors": [
+            {
+                "name": "rouchi-service-templete-core-component",
+                "email": "rouchi-service-team@rouchi.com"
+            }
+        ],
+        "description": "rouchi templete core componet"
+    },
+    {
+        "name": "rouchi/jy_db",
+        "version": "v0.1.7",
+        "version_normalized": "0.1.7.0",
+        "source": {
+            "type": "git",
+            "url": "ssh://git@gitlab.rouchi.com:10022/php_sevice_group/jy_db.git",
+            "reference": "455db14dfc14339d29f8ca5c0114170411d16404"
+        },
+        "dist": {
+            "type": "tar",
+            "url": "http://packagist.rouchi.com/dist/rouchi/jy_db/rouchi-jy_db-v0.1.7-70f387.tar",
+            "reference": "455db14dfc14339d29f8ca5c0114170411d16404",
+            "shasum": "5c79496c6f246c51d2daa80be1c1dfd10d29fb5f"
+        },
+        "require": {
+            "php": "^7.2"
+        },
+        "time": "2020-01-13T10:46:18+00:00",
+        "type": "component",
+        "installation-source": "dist",
+        "autoload": {
+            "psr-4": {
+                "Jy\\Db\\": "src/"
+            }
+        },
+        "license": [
+            "BSD-3-Clause"
+        ],
+        "authors": [
+            {
+                "name": "rouchi-service-templete-db-component",
+                "email": "rouchi-service-team@rouchi.com"
+            }
+        ],
+        "description": "rouchi templete db componet"
+    },
+    {
+        "name": "rouchi/jy_log",
+        "version": "v0.0.4",
+        "version_normalized": "0.0.4.0",
+        "source": {
+            "type": "git",
+            "url": "ssh://git@gitlab.rouchi.com:10022/php_sevice_group/jy_log.git",
+            "reference": "008405dbee06267a69bc5e27ca3bf2663decf64e"
+        },
+        "dist": {
+            "type": "tar",
+            "url": "http://packagist.rouchi.com/dist/rouchi/jy_log/rouchi-jy_log-v0.0.4-79e5b0.tar",
+            "reference": "008405dbee06267a69bc5e27ca3bf2663decf64e",
+            "shasum": "26405f1e4999139ea9aa69f7ba3ea96e46d42020"
+        },
+        "time": "2020-01-10T10:23:35+00:00",
+        "type": "library",
+        "installation-source": "dist",
+        "autoload": {
+            "psr-4": {
+                "Jy\\Log\\": "src/"
+            },
+            "files": []
+        },
+        "authors": [
+            {
+                "name": "xiaoz",
+                "email": "wangdongyan@rouchi.com"
+            }
+        ],
+        "description": "jy_log file"
+    }
+]

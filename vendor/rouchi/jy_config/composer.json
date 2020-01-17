@@ -1,0 +1,21 @@
+{
+    "name": "rouchi/jy_config",
+    "type": "component",
+    "description": "rouchi templete config componet",
+    "license": "BSD-3-Clause",
+    "authors": [
+        {
+            "name": "rouchi-service-templete-config-component",
+            "email": "rouchi-service-team@rouchi.com"
+        }
+    ],
+    "require": {
+        "php": "^7.2"
+    },
+    "autoload": {
+        "psr-4" : {
+            "Jy\\Config\\" : "src/"
+        }
+    }
+}
+

@@ -1,0 +1,21 @@
+{
+    "name": "rouchi/jy_db",
+    "type": "component",
+    "description": "rouchi templete db componet",
+    "license": "BSD-3-Clause",
+    "authors": [
+        {
+            "name": "rouchi-service-templete-db-component",
+            "email": "rouchi-service-team@rouchi.com"
+        }
+    ],
+    "require": {
+        "php": "^7.2"
+    },
+    "autoload": {
+        "psr-4" : {
+            "Jy\\Db\\" : "src/"
+        }
+    }
+}
+
