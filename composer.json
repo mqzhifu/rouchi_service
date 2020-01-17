@@ -1,0 +1,34 @@
+{
+  "name": "rouchi/rouchi_service",
+  "type": "subject",
+  "description": "rouchi templete fram",
+  "license": "BSD-3-Clause",
+  "authors": [
+    {
+      "name": "xiaoz",
+      "email": "wangdongyan@rouchi.com"
+    }
+  ],
+  "require": {
+  "php": "^7.2",
+  "rouchi/jy_core": "*",
+    "rouchi/jy_db": "*",
+    "rouchi/jy_config": "*",
+    "rouchi/jy_common": "*",
+    "rouchi/jy_log": "*"
+},
+"autoload": {
+"psr-4" : {
+"Rouchi\\" : ""
+}
+},
+"repositories": [
+{
+"type": "composer",
+"url": "https://packagist.rouchi.com/"
+}
+],
+  "config": {
+    "secure-http": false
+  }
+}
