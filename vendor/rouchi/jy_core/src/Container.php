@@ -2,12 +2,22 @@
 
 namespace Jy;
 
+use Jy\Facade\Log;
+
 class Container
 {
     private $_singletons = [];
+    //IOC/DI依赖注入
+    private $di;
+
+    function __construct()
+    {
+        $this->di = new \Jy\Di();
+    }
 
     public function get($name)
     {
+        Log::info($name);
         if (isset($this->_singletons[$name])) {
             return $this->_singletons[$name];
         }
@@ -21,11 +31,12 @@ class Container
             throw new \Exception('class '. $name .' not exists');
         }
 
-        if (method_exists($className, 'getInstance')) {
-            $single = $className::getInstance();
-        } else {
-            $single = new $className();
-        }
+//        if (method_exists($className, 'getInstance')) {
+//            $single = $className::getInstance();
+//        } else {
+//            $single = new $className();
+//        }
+        $single = $this->di->getClassInstance($className);
 
         $this->_singletons[$name] =  $single;
 

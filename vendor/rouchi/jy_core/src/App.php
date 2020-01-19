@@ -8,11 +8,13 @@ class App
 
     public static $container;
 
+    public static $checkFramework;
+
     public static function init()
     {
         static::$app = new static();
         static::$container = new \Jy\Container();
-
+        static::$checkFramework = new \Jy\Util\CheckFramework();
         //set_error_handler(['\Jy\App', 'handleError']);
         //register_shutdown_function(['\Jy\App', 'handleFatalError']);
         //set_exception_handler(['\Jy\App', 'exceptionError']);
@@ -23,8 +25,9 @@ class App
 
     public static function run()
     {
-        static::init();
 
+        static::init();
+        static::$checkFramework->check();
         static::$app->dispatcher->dispatcher();
     }
 

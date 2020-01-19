@@ -1,5 +1,5 @@
 <?php
-namespace Jy\Base\Di;
+namespace Jy;
 
 class Di{
 //    private $_traceInfo = "";
@@ -16,7 +16,7 @@ class Di{
     private $_execCnt = 0;
     private $_execCntMax = 20;
 
-
+    private $_getInstanceFuncName = "getInstance";
 
     function __construct(){
 
@@ -55,7 +55,7 @@ class Di{
 
     private function throwException($info){
         $info = json_encode($this->_trace).$info;
-        throw new Exception($info);
+        throw new \Exception($info);
     }
     //类里的 成员变量 引用了 其它类，需要注入
     function initMember($relClass,$instant,$className){
@@ -74,10 +74,44 @@ class Di{
         return $instant;
     }
     //类里的函数的注解
-    function initMethod($className,$methodName,$instant){
+    function initMethod($className,$methodName){
+        $relClass = new \ReflectionClass($className);
+        $method = $this->getClassMethods($relClass, $methodName);
+        if(!$method){
+            return null;
+        }
 
+        $dependencies = $method->getParameters();
+        if(!$dependencies){
+            return null;
+        }
+
+        foreach ($dependencies as $k=>$v) {
+            if($v->hasType()){
+                $paraClass = $v->getType();
+                $paraClassName = $paraClass->getName();
+            }else{
+                $paraClassName = $v->getName();
+            }
+            if(!class_exists($className)){
+                exit("class not exists:".$paraClassName);
+            }
+            $dependInstantClass[$v->getPosition()] = $this->getClassInstance($paraClassName,$className);
+        }
+
+        return $dependInstantClass;
     }
 
+    function getClassMethods($refClass,$methodName){
+        $methods = $refClass->getMethods();
+        foreach ($methods as $k=>$v) {
+            if($v->getName() == $methodName ){
+                return $v;
+            }
+        }
+
+        return 0;
+    }
 
     function getClassInstance($className,$father = null){
         if(!class_exists($className)){
@@ -88,16 +122,19 @@ class Di{
             $this->throwException("实例类最多层级为：".$this->_execCntMax);
         }
         //获取反射类
-        $relClass = new ReflectionClass($className);
+        $relClass = new \ReflectionClass($className);
         // 查看是否可以实例化
-        if (! $relClass->isInstantiable()) {
-            $this->throwException($className . ' 类不可实例化');
+        $isInstantiable = $relClass->isInstantiable();
+        if (!$isInstantiable ) {
+            $method = $this->getClassMethods($relClass, $this->_getInstanceFuncName);
+            if(!$method)
+                $this->throwException($className . ' 类不可实例化');
         }
-        // 查看是否用构造函数
+        // 查看是否有：构造函数
         $constructorMethod = $relClass->getConstructor();
         // 没有构造函数
         if (is_null($constructorMethod)) {
-            $instant =  $this->instance($className);
+            $instant =  $this->instance($className,null,$isInstantiable);
             $finalInstant = $this->initMember($relClass,$instant,$className);
             return $finalInstant;
         }
@@ -107,11 +144,16 @@ class Di{
         }
         $this->checkLoop($className);
         $this->setFather($father);
+
+        return $this->instanceByMethod($constructorMethod,$isInstantiable,$relClass,$className);
+
+    }
+    function instanceByMethod($method,$isInstantiable,$relClass,$className){
         //获取构造函数的-请求参数
-        $dependencies = $constructorMethod->getParameters();
+        $dependencies = $method->getParameters();
         if(!$dependencies){
             //构造函数没有任何参数，不需要注入
-            $instant =  $this->instance($className);
+            $instant =  $this->instance($className,null,$isInstantiable);
             $finalInstant = $this->initMember($relClass,$instant,$className);
             return $finalInstant;
         }
@@ -123,24 +165,39 @@ class Di{
 
         $dependInstantClass = [];
         foreach ($dependencies as $k=>$v) {
-            $paraClassName =  ucfirst($v->getName());
+            if($v->hasType()){
+                $paraClass = $v->getType();
+                $paraClassName = $paraClass->getName();
+            }else{
+                $paraClassName = $v->getName();
+            }
+//            $paraClassName =  ucfirst($v->getName());
             if(!class_exists($className)){
                 exit("class not exists:".$paraClassName);
             }
             $dependInstantClass[$v->getPosition()] = $this->getClassInstance($paraClassName,$className);
         }
-
-        $instant = new $className(...$dependInstantClass);
+        $instant = $this->instance($className,$dependInstantClass,$isInstantiable);
         $finalInstant = $this->initMember($relClass,$instant,$className);
         return $finalInstant;
     }
+
     //实例化一个类
-    private function instance($className,$paraInstantList = null){
-        if($paraInstantList){
-            $instance = new $className(...$paraInstantList);
+    private function instance($className,$paraInstantList = null,$isInstantiable = 1){
+        if($isInstantiable){
+            if($paraInstantList){
+                $instance = new $className(...$paraInstantList);
+            }else{
+                $instance = new $className();
+            }
         }else{
-            $instance = new $className();
+            if($paraInstantList){
+                $instance = call_user_func_array(array($className,$this->_getInstanceFuncName),$paraInstantList);
+            }else{
+                $instance = call_user_func_array(array($className,$this->_getInstanceFuncName),array());
+            }
         }
+
         $this->_execCnt++;
         return $instance;
     }

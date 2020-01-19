@@ -58,8 +58,10 @@ class Dispatcher
             \Jy\Common\Valid\Facades\Valid::match(\Jy\App::$app->request->getArgs(),$annotation['valid']);
         }
 
+
+        $para = \Jy\App::$app->di->initMethod($namespace,$action,$controller);
         // hook
-        $result = call_user_func_array([$controller, $action], $args);
+        $result = call_user_func_array([$controller, $action], $para);
         // hook
 
         echo $result;
