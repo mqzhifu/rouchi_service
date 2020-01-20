@@ -16,6 +16,6 @@ return [
             'password' => 'root',
             'port' => '3306'
         ],
-        'database'  => 'jy_fram',
+        'database'  => 'test',
     ],
 ];
