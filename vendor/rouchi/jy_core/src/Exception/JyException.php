@@ -3,7 +3,7 @@
 namespace Jy\Exception;
 
 
-class JyException extend \Exception
+class JyException extends \Exception
 {
     //..
 }

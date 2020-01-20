@@ -22,6 +22,10 @@ class Di{
 
     }
 
+    static function getInstance(){
+        return new self();
+    }
+
 //    function setDebug($level){
 //        $this->_debug = $level;
 //    }
@@ -112,7 +116,7 @@ class Di{
 
         return 0;
     }
-
+    //入口，获取一个类的实例化
     function getClassInstance($className,$father = null){
         if(!class_exists($className)){
             $this->throwException("class not exists:".$className);

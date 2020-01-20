@@ -7,12 +7,9 @@ use Jy\Facade\Log;
 class Container
 {
     private $_singletons = [];
-    //IOC/DI依赖注入
-    private $di;
 
-    function __construct()
-    {
-        $this->di = new \Jy\Di();
+    function __construct(){
+
     }
 
     public function get($name)
@@ -36,7 +33,7 @@ class Container
 //        } else {
 //            $single = new $className();
 //        }
-        $single = $this->di->getClassInstance($className);
+        $single = \Jy\Di::getInstance()->getClassInstance($className);
 
         $this->_singletons[$name] =  $single;
 
