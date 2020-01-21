@@ -50,7 +50,7 @@ class File extends Main {
             $this->$k = $v;
             return $this;
         }
-        throw new \Exception("set private variable err.");
+        $this->throwException("set private variable err.");
     }
 
     //统计不可调试日志
@@ -110,12 +110,10 @@ class File extends Main {
     //=============================================
     function setHashType($type){
         if(!in_array($type,$this->_hashTypeDesc)){
-            throw new \Exception("setHashType failed, type value is error.");
+            $this->throwException("setHashType failed, type value is error.");
         }
         $this->_hashType = $type;
     }
-
-
     //====================以上可对外开放======================
 
     //初始化路径
@@ -197,7 +195,7 @@ class File extends Main {
     //检查设置路径正确否
     function checkBasePath(){
         if(!is_dir($this->_path)){
-            throw new \Exception("base path is not dir:$this->_path");
+            $this->throwException("base path is not dir:$this->_path");
         }
     }
     //检查路是否存在 ，不存在 则尝试创建
@@ -205,10 +203,15 @@ class File extends Main {
         if(!is_dir($this->_writePath)){
             $rs = mkdir($this->_writePath);
             if(!$rs){
-                throw new \Exception("create dir failed,path:$this->_writePath");
+                $this->throwException("create dir failed,path:$this->_writePath");
             }
         }
     }
+
+    function throwException($msg){
+        throw new \Exception($msg);
+    }
+
     //判断目录是否有写权限
     function fileModeInfo($file_path){
         /* 如果不存在，则不可读、不可写、不可改 */

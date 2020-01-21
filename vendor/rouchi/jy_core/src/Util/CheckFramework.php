@@ -14,7 +14,7 @@ class CheckFramework{
         $arr = array('gd','curl','pdo','mbstring',"mysqli",'openssl');
         foreach ($arr as $k=>$v) {
             if(!extension_loaded($v)){
-                throw new \Exception(400,"check ext err: no include $v  . include list:". json_encode($arr));
+                throw new \Exception(1100000,"check ext err: no include $v  . include list:". json_encode($arr));
             }
         }
         return true;
@@ -24,7 +24,7 @@ class CheckFramework{
         $constList = array('ROUCHI_ROOT_PATH','ROUCHI_CONF_PATH','ROUCHI_LOG_PATH','ROUCHI_APP_NAME');
         foreach ($constList as $k=>$v) {
             if(!defined($v)){
-                throw new \Exception(401,"check const err: no include $v  . include list:". json_encode($constList));
+                throw new \Exception("check const $v not include",110001);
             }
         }
 
@@ -34,9 +34,8 @@ class CheckFramework{
     function checkPHPVersion(){
         $version = substr(PHP_VERSION,0,3);
         if($version < "7.2"){
-            throw new \Exception("PHP VERSION last:7.2.0");
+            throw new \Exception("PHP VERSION last:7.2.0",1100002);
         }
-
     }
 
     function check(){

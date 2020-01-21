@@ -1,6 +1,6 @@
 <?php
 
-namespace Jy\Db\Db;
+namespace Jy\Db\Database;
 
 /**
  * PDODriver

@@ -1,9 +1,9 @@
 <?php
 
-namespace Jy\Db\Db;
+namespace Jy\Db\Database;
 
 use Jy\Db\Contract\DbAbstract;
-use Jy\Db\Db\PDODriver;
+use Jy\Db\Database\PDODriver;
 
 class Db extends  DbAbstract
 {
@@ -112,7 +112,7 @@ class Db extends  DbAbstract
         // 构建SQL
         $sql = sprintf('insert into `%s` (%s) values ?',
             $table,
-            $this->buildFields(array_keys($params[0])),
+            $this->buildFields(array_keys($params[0]))
         );
 
         $params = $this->buildBatchValues($params);

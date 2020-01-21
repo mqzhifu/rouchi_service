@@ -3,6 +3,7 @@
 namespace Jy;
 
 use Jy\Exception\JyException;
+use Jy\Facade\Log;
 
 class App
 {
@@ -16,7 +17,7 @@ class App
     {
         static::$app = new static();
 
-        static::initException();
+//        static::initException();
 
         static::$container = new \Jy\Container();
 
@@ -29,6 +30,7 @@ class App
 
     public static function run()
     {
+        Log::info("APP start run...");
         static::init();
         static::$checkFramework->check();
         static::$app->dispatcher->dispatcher();
@@ -47,7 +49,7 @@ class App
         set_exception_handler(['\Jy\App', 'exceptionError']);
     }
 
-    public static function exceptionError($code, $message, $file = '', $line = 0)
+    public static function exceptionError($code, $message)
     {
         // 如果用户注册了自己的异常接受类，则继续传递
         // 继承接口

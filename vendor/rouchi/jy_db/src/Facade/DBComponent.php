@@ -2,7 +2,7 @@
 
 namespace Jy\Db\Facade;
 
-use Jy\Db\Db\Db;
+use Jy\Db\Database\Db;
 use Jy\Config\Facade\Config;
 
 class DBComponent
