@@ -1,6 +1,8 @@
 <?php
 namespace Jy;
 
+use Jy\Facade\Log;
+
 class Di{
 //    private $_traceInfo = "";
 //    private $_debug = 2;
@@ -52,14 +54,38 @@ class Di{
 
         foreach ($this->_trace as $k=>$v) {
             if($v == $className){
-                $this->throwException("loop create class".json_encode($this->_trace));
+                $this->throwException(500);
             }
         }
     }
 
-    private function throwException($info){
-        $info = json_encode($this->_trace).$info;
-        throw new \Exception($info);
+    private $_codeErrMessage = array(
+        400=>'code is null',
+        401=>'code not is key',
+        500=>"loop create class",
+        501=>"实例类最多层级为：{0}",
+        502=>"class not exists:{0}",
+        503=>'{0} 类不可实例化',
+    );
+
+    function throwException($code,$replace = ""){
+        if(!$code){
+            throw new \Exception($this->_codeErrMessage[400]);
+        }
+
+        if(!isset($this->_codeErrMessage[$code]) || !$this->_codeErrMessage[$code]){
+            throw new \Exception($this->_codeErrMessage[401]);
+        }
+        if(!$replace){
+            throw new \Exception($this->_codeErrMessage[$code]);
+        }else{
+            $message = $this->_codeErrMessage[$code];
+            foreach ($replace as $key => $v) {
+                $message = str_replace("{" . $key ."}",$v,$message);
+            }
+
+            throw new \Exception($message);
+        }
     }
     //类里的 成员变量 引用了 其它类，需要注入
     function initMember($relClass,$instant,$className){
@@ -119,11 +145,11 @@ class Di{
     //入口，获取一个类的实例化
     function getClassInstance($className,$father = null){
         if(!class_exists($className)){
-            $this->throwException("class not exists:".$className);
+            $this->throwException(502,$className);
         }
 
         if($this->_execCnt > $this->_execCntMax){
-            $this->throwException("实例类最多层级为：".$this->_execCntMax);
+            $this->throwException(501,$this->_execCntMax);
         }
         //获取反射类
         $relClass = new \ReflectionClass($className);
@@ -132,7 +158,7 @@ class Di{
         if (!$isInstantiable ) {
             $method = $this->getClassMethods($relClass, $this->_getInstanceFuncName);
             if(!$method)
-                $this->throwException($className . ' 类不可实例化');
+                $this->throwException(503,$className);
         }
         // 查看是否有：构造函数
         $constructorMethod = $relClass->getConstructor();
@@ -189,12 +215,14 @@ class Di{
     //实例化一个类
     private function instance($className,$paraInstantList = null,$isInstantiable = 1){
         if($isInstantiable){
+            Log::info("DI new class:".$className);
             if($paraInstantList){
                 $instance = new $className(...$paraInstantList);
             }else{
                 $instance = new $className();
             }
         }else{
+            Log::info("DI getInstance class:".$className);
             if($paraInstantList){
                 $instance = call_user_func_array(array($className,$this->_getInstanceFuncName),$paraInstantList);
             }else{

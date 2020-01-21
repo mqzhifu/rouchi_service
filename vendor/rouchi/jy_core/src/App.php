@@ -20,8 +20,6 @@ class App
 //        static::initException();
 
         static::$container = new \Jy\Container();
-
-        static::$container = new \Jy\Container();
         static::$checkFramework = new \Jy\Util\CheckFramework();
 
         // 常量 配置 todo

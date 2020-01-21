@@ -2,6 +2,8 @@
 
 namespace Jy;
 
+use Jy\Facade\Log;
+
 class Dispatcher
 {
 
@@ -52,6 +54,7 @@ class Dispatcher
             throw new \Exception('action : '. $namespace .':'. $action .' not exists');
         }
 
+        Log::info("ctrl:$namespace, action:$action");
         // heredoc
         $annotation = \Jy\App::$app->reflect->resolveClass($namespace, $action, "method");
         if($annotation && isset($annotation['valid']) && $annotation['valid']){
@@ -65,6 +68,8 @@ class Dispatcher
         // hook
 
         echo $result;
+
+        Log::info("action end");
         exit();
     }
 }

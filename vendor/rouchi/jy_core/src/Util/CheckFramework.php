@@ -17,6 +17,7 @@ class CheckFramework{
                 throw new \Exception(1100000,"check ext err: no include $v  . include list:". json_encode($arr));
             }
         }
+
         return true;
     }
 

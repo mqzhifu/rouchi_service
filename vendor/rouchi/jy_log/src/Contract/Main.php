@@ -12,7 +12,7 @@ abstract class Main  implements MainInterface, PsrLoggerInterface {
     private $_msgFormatDatetime = "Y-m-d H:i:s";
 
     private $_filter = "";//可以过滤掉 内容 中的一些特定字符 ，如：换行符
-    private $_deepTrace = 2;//追踪回溯层级,0:全部
+    private $_deepTrace = 0;//追踪回溯层级,0:全部
 
     private $_showScreen = 0;//输出到屏幕
 
@@ -126,7 +126,11 @@ abstract class Main  implements MainInterface, PsrLoggerInterface {
 //                    $info .= $this->makeRequestId() . $this->_delimiter;
 //                    break;
                 case 'dt':
-                    $info .= date($this->_msgFormatDatetime,time()). $this->_delimiter;
+                    $mtimestamp = sprintf("%.3f", microtime(true)); // 带毫秒的时间戳
+                    $timestamp = floor($mtimestamp); // 时间戳
+                    $milliseconds = round(($mtimestamp - $timestamp) * 1000); // 毫秒
+
+                    $info .= date($this->_msgFormatDatetime,time()). " ". $milliseconds .  $this->_delimiter;
                     break;
                 case 'pid':
                     $info .= getmypid(). $this->_delimiter;
@@ -136,19 +140,17 @@ abstract class Main  implements MainInterface, PsrLoggerInterface {
                     $info .= $this->getClientIp(). $this->_delimiter;
                     break;
                 case 'tr':
-                    $text = "";
+                    if(!$this->_deepTrace){
+                        break;
+                    }
                     $trace = debug_backtrace();
                     foreach ($trace as $k =>$v){
                         if($this->_deepTrace && $k > $this->_deepTrace){
                             break;
                         }
                         $info .= ($v['class'] . "-" . $v['function'] ."#");
-
                     }
-
-
                     break;
-
             }
         }
 

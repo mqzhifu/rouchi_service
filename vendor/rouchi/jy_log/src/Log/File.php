@@ -5,6 +5,15 @@ use Jy\Log\Contract\Main;
 
 class File extends Main {
 
+    private $_codeErrMessage = array(
+        400=>'code is null',
+        401=>'code not is key',
+        500=>"set private variable err.",
+        501=>"setHashType failed, type value is error.",
+        502=>"base path is not dir:{0}",
+        503=>"create dir failed,path {0}",
+    );
+
     private $_totalRecord = 0;//将所有日志 统一记录到某一个文件中
 
     private $_projectName = "";//项目名，用于 分类文件夹
@@ -22,25 +31,6 @@ class File extends Main {
     private $_fd = null;//类内部使用，缓存文件句柄，后期优化
     private $_level = "";//类内部使用
 
-//    private static $instance = null;
-//    public static function getInstance(){
-//        if(self::$instance){
-//            return self::$instance;
-//        }
-//        $self =  new self();
-//        self::$instance = $self;
-//        return self::$instance;
-//    }
-
-//    function __call($name, $arguments)
-//    {
-//        $this->_level = "debug";
-//
-//        $this->initPath("debug");
-//        $info =  parent::debug($message,$context);
-//        $this->flush($info);
-//    }
-
     function __construct(){
         parent::__construct();
     }
@@ -50,7 +40,7 @@ class File extends Main {
             $this->$k = $v;
             return $this;
         }
-        $this->throwException("set private variable err.");
+        $this->throwException(500);
     }
 
     //统计不可调试日志
@@ -110,7 +100,7 @@ class File extends Main {
     //=============================================
     function setHashType($type){
         if(!in_array($type,$this->_hashTypeDesc)){
-            $this->throwException("setHashType failed, type value is error.");
+            $this->throwException(501);
         }
         $this->_hashType = $type;
     }
@@ -195,7 +185,7 @@ class File extends Main {
     //检查设置路径正确否
     function checkBasePath(){
         if(!is_dir($this->_path)){
-            $this->throwException("base path is not dir:$this->_path");
+            $this->throwException(502,array($this->_path));
         }
     }
     //检查路是否存在 ，不存在 则尝试创建
@@ -203,13 +193,29 @@ class File extends Main {
         if(!is_dir($this->_writePath)){
             $rs = mkdir($this->_writePath);
             if(!$rs){
-                $this->throwException("create dir failed,path:$this->_writePath");
+                $this->throwException(503,array($this->_writePath));
             }
         }
     }
 
-    function throwException($msg){
-        throw new \Exception($msg);
+    function throwException($code,$replace = ""){
+        if(!$code){
+            throw new \Exception($this->_codeErrMessage[400]);
+        }
+
+        if(!isset($this->_codeErrMessage[$code]) || !$this->_codeErrMessage[$code]){
+            throw new \Exception($this->_codeErrMessage[401]);
+        }
+        if(!$replace){
+            throw new \Exception($this->_codeErrMessage[$code]);
+        }else{
+            $message = $this->_codeErrMessage[$code];
+            foreach ($replace as $key => $v) {
+                $message = str_replace("{" . $key ."}",$v,$message);
+            }
+
+            throw new \Exception($message);
+        }
     }
 
     //判断目录是否有写权限

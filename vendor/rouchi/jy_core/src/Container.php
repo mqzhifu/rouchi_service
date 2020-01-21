@@ -14,8 +14,9 @@ class Container
 
     public function get($name)
     {
-        Log::info($name);
+
         if (isset($this->_singletons[$name])) {
+            Log::info("Container: get class ".$name . " by singletons");
             return $this->_singletons[$name];
         }
 
@@ -33,6 +34,7 @@ class Container
 //        } else {
 //            $single = new $className();
 //        }
+        Log::info("Container: get class ".$name . " by DI");
         $single = \Jy\Di::getInstance()->getClassInstance($className);
 
         $this->_singletons[$name] =  $single;

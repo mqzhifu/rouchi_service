@@ -4,6 +4,7 @@ namespace Jy\Common\Valid\Valid;
 use Jy\Common\Valid\Contract\FilterInterface;
 use Jy\Common\Valid\Contract\ValidInterface;
 use Jy\Common\Valid\Valid\Filter;
+use Jy\Facade\Log;
 
 
 class Valid implements ValidInterface,FilterInterface {
@@ -31,28 +32,20 @@ class Valid implements ValidInterface,FilterInterface {
     }
     //验证 数据 格式及类型是否正确
     function match($data,$rules){
-//        $this->throwException("aaa");
-//        try{
         if(!$data){
-            $this->throwException("para:<data> is null.(in func:valid)");
+            $this->throwException(500);
         }
 
         if(!$rules){
-            $this->throwException("para:<rules> is null.(in func:valid)");
+            $this->throwException(501);
         }
-//            $rules = json_decode($rules,true);
-//            if(!$rules){
-//                $this->throwException("json 格式 错误");
-//            }
         $this->arrayMakeRequireFlag($rules);
         $this->explodeMapKey();
-//            var_dump($this->map);exit;
+
         $this->recursion($data,$rules,1);
-//        }catch (Exception $e){
-//            $msg = $this->_traceInfo ."|".$e->getMessage();
-//            var_dump($e->getMessage());exit;
-//        }
-//        return true;
+        Log::info("valid action parameter ok! ");
+
+        return true;
     }
 
     function explodeMapKey(){
@@ -71,11 +64,36 @@ class Valid implements ValidInterface,FilterInterface {
 ////        var_dump($newMap);exit;
     }
 
+    private $_codeErrMessage = array(
+        400=>'code is null',
+        401=>'code not is key',
+        500=>"para:<data> is null.(in func:valid).",
+        501=>"para:<rules> is null.(in func:valid).",
+        502=>"explode rule is err.",
+        503=>"{0}-{1}-{2}",
+        504=>"{0}",
+        505=>"{0},数组为空",
+    );
+
     //统一抛异常
-    function throwException($info){
-        $info = $this->_traceInfo . "\n".$info;
-//        var_dump($info);exit;
-        throw new \Exception($info);
+    function throwException($code,$replace = ""){
+        if(!$code){
+            throw new \Exception($this->_codeErrMessage[400]);
+        }
+
+        if(!isset($this->_codeErrMessage[$code]) || !$this->_codeErrMessage[$code]){
+            throw new \Exception($this->_codeErrMessage[401]);
+        }
+        if(!$replace){
+            throw new \Exception($this->_codeErrMessage[$code]);
+        }else{
+            $message = $this->_codeErrMessage[$code];
+            foreach ($replace as $key => $v) {
+                $message = str_replace("{" . $key ."}",$v,$message);
+            }
+
+            throw new \Exception($message);
+        }
     }
     //数组中的KEY是否定义，防止出现NOTICE
     function  arrKeyIssetAndExist($arr,$key){
@@ -135,7 +153,7 @@ class Valid implements ValidInterface,FilterInterface {
             if(!is_array($v)){
                 $explodeRule = explode("|",$v);
                 if(!$explodeRule || !is_array($explodeRule)){
-                    $this->throwException("explode rule is err.");
+                    $this->throwException(502);
                 }
                 //把require提到最前
                 $finalExplodeRule = $this->moveRuleRequireFirst($explodeRule);
@@ -155,13 +173,13 @@ class Valid implements ValidInterface,FilterInterface {
                             continue;
                         }else{
                             $this->out(" not isset");
-                            $this->throwException($k ."-".$oneRule . " ". $this->getMessage($oneRule));
+                            $this->throwException(503,array($k,$oneRule,$this->getMessage($oneRule)));
                         }
                     }
                     $preg = $this->_filter->match($data[$k],$oneRule);
                     $this->out("     filter rs:$preg");
                     if(!$preg){
-                        $this->throwException($this->getMessage($oneRule));
+                        $this->throwException(504,$this->getMessage($oneRule));
                     }
                 }
             }else{
@@ -222,7 +240,7 @@ class Valid implements ValidInterface,FilterInterface {
         $this->out("getMapValue:$rs");
         if($rs){
             if(!isset($data[$k]) || !$data[$k]){
-                $this->throwException("$k,数组为空");
+                $this->throwException(505,array($k));
             }
         }
     }
