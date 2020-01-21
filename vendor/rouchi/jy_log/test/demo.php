@@ -58,3 +58,11 @@ Log::log("super","aaaa");//<br/>
 
 
 
+//class a{
+//    @Log
+//    private $a = null;
+//}
+//
+//AOP("a");
+//
+//new a();

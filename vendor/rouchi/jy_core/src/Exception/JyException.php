@@ -6,7 +6,7 @@ namespace Jy\Exception;
 class JyException extends \ErrorException
 {
 
-    public function __construct()
+    public function __construct($msg, $code, $param = [])
     {
         try {
             // trigger event

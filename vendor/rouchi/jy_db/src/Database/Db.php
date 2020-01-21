@@ -41,23 +41,20 @@ class Db extends  DbAbstract
     protected function execute($sql, $params = array())
     {
         if (!is_array($params)) $params = array($params);
-        $query = $this->buildQuery($sql, $params);
-        return $this->exec($query);
+
+        $query = $this->buildQuery($sql);
+
+        return $query->execute($params);
     }
 
     /**
-     * 绑定参数
+     * sql 处理
      * @param string $query
-     * @param array $params
      * @return string
      */
-    protected function buildQuery($query, $params = array())
+    protected function buildQuery($query)
     {
-        if (!is_array($params)) $params = array($params);
-        foreach ($params as $param) {
-            $query = preg_replace('/\?/', $param, $query, 1);
-        }
-        return $query;
+        return $this->prepare($query);
     }
 
     /**
@@ -76,7 +73,7 @@ class Db extends  DbAbstract
 
         $params_t = array();
         foreach ($params as $field) {
-            $params_t[] = $this->quote($field);
+            $params_t[] = ($field);
         }
 
         $ret = $this->execute($sql, $params_t);
@@ -86,7 +83,7 @@ class Db extends  DbAbstract
 
     public function updateById($table, $id, array $param)
     {
-        if (empty($table) || empty($params) || empty($id))
+        if (empty($table) || empty($param) || empty($id))
             return 0;
         $temp = array();
         foreach ($param as $k => $v) {
@@ -110,13 +107,13 @@ class Db extends  DbAbstract
     {
         if (empty($table) || empty($params)) return 0;
         // 构建SQL
-        $sql = sprintf('insert into `%s` (%s) values ?',
+        $sql = sprintf('insert into `%s` (%s) values %s',
             $table,
-            $this->buildFields(array_keys($params[0]))
+            $this->buildFields(array_keys($params[0])),
+            $this->buildMultiValues(count($params[0]), count($params))
         );
 
         $params = $this->buildBatchValues($params);
-
         $ret = $this->execute($sql, $params);
 
         return $this->lastInsertId();
@@ -143,22 +140,29 @@ class Db extends  DbAbstract
         return rtrim(str_repeat('?,', count($fields)), ',');
     }
 
+    protected function buildMultiValues($fieldsCount = 1, $dataCount = 1)
+    {
+        $str = "";
+        for ($i = 1; $i <= $dataCount; $i++) {
+            $str .= "(". rtrim(str_repeat('?,', $fieldsCount), ',')  ."),";
+        }
+
+        return rtrim($str, ',');
+    }
+
     /**
      * @param  array $fieldArrs 插入的数据
      * @return string
-     *
      */
     protected function buildBatchValues($fieldArrs = [])
     {
-        $sqlSection = [];
+        $valueArr = [];
         foreach ($fieldArrs as $fieldArr) {
-            $valueArr = [];
             foreach($fieldArr as $value) {
-                $valueArr[] = $this->quote($value);
+                $valueArr[] = ($value);
             }
-            $sqlSection[] = " (". implode(',', $valueArr) . ") ";
         }
-        return implode(',', $sqlSection);
+        return $valueArr;
     }
 
 
@@ -170,9 +174,9 @@ class Db extends  DbAbstract
      */
     public function findOne($sql, $params = array())
     {
-        $query = $this->buildQuery($sql, $params);
-        if (!$st = $this->query($query)) return array();
-        $row = $st->fetch(\PDO::FETCH_ASSOC);
+        $query = $this->buildQuery($sql);
+        if (!$st = $query->execute($params)) return array();
+        $row = $query->fetch(\PDO::FETCH_ASSOC);
         return $row ? $row : array();
     }
 
@@ -184,9 +188,9 @@ class Db extends  DbAbstract
      */
     public function findAll($sql, $params = array())
     {
-        $query = $this->buildQuery($sql, $params);
-        if (!$st = $this->query($query)) return array();
-        $rows = $st->fetchAll(\PDO::FETCH_ASSOC);
+        $query = $this->buildQuery($sql);
+        if (!$st = $query->execute($params)) return array();
+        $rows = $query->fetchAll(\PDO::FETCH_ASSOC);
         return $rows ? $rows : array();
     }
 

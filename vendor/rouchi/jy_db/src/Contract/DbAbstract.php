@@ -8,7 +8,7 @@ use Jy\Db\Contract\DbInterface;
 abstract class DbAbstract implements DbInterface
 {
     abstract protected function execute($sql, $param = array());
-    abstract protected function buildQuery($sql, $param = array());
+    abstract protected function buildQuery($sql);
     abstract protected function buildFields($fields = array());
     abstract protected function buildValues($fields = array());
     abstract protected function buildBatchValues($fieldArrs = []);

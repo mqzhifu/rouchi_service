@@ -17,7 +17,9 @@ class App
     {
         static::$app = new static();
 
-//        static::initException();
+        //static::initException();
+
+        static::$container = new \Jy\Container();
 
         static::$container = new \Jy\Container();
         static::$checkFramework = new \Jy\Util\CheckFramework();
@@ -47,19 +49,32 @@ class App
         set_exception_handler(['\Jy\App', 'exceptionError']);
     }
 
-    public static function exceptionError($code, $message)
+    public static function exceptionError(\Throwable $message)
     {
         // 如果用户注册了自己的异常接受类，则继续传递
         // 继承接口
 
         // 上下文获取response，并返回
+        echo "<pre>";
+        print_r([
+            'ret' => $message->getLine(),
+            'file' => $message->getFile(),
+            'msg' => $message->getMessage(),
+            'trace' => $message->getTrace(),
+        ]);
+
 
         exit();
     }
 
-    public static function handleError($code, $message, $file = '', $line = 0)
+    public static function handleError($code, $message, $file, $line)
     {
-        throw new JyException($code, $message);
+        $param = [
+            'file' => $file,
+            'line' => $line,
+            'context' => $context
+        ];
+        throw new JyException($message, $code, $param);
     }
 
     /**
@@ -68,7 +83,7 @@ class App
     public static function handleFatalError()
     {
         $error = error_get_last();
-
-        throw new JyException(500, $error['message'] ?? 'sys error');
+        //Logger
+        // context destroy
     }
 }

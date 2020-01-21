@@ -3,135 +3,6 @@ namespace Jy\Common\Valid\Test;
 include_once "./../../../vendor/autoload.php";
 use Jy\Common\Valid\Facades\Valid;
 
-#rule验证规则定义(json格式)
-#
-#参数名 : [验证的具体规则]
-#如：参数名为 cnt ，规则为：整形   不能大于10   数字范围为2-15
-# "cnt": ["int", "numberMax:10", "numberRange:2,15"]
-
-#定义 KEY为数值 的数组
-#<textarea>
-#   "dataArrOneNum": {
-#       "0": "require",
-#       "array": ["require", "int", "key_number"]
-#   }
-#</textarea>
-
-$rule = '{
-	"cnt": ["int", "numberMax:10", "numberRange:2,15"],
-	"name": ["require", "string", "lengthMin:10"],
-	"price": ["require", "float"],
-	"isLogin": ["require", "bool"],
-	"myOb": ["require", "object"],
-	"email": ["email", "lengthRange:10,20"],
-	"dataArrOneNum": {
-		"0": "require",
-		"array": ["require", "int", "key_number"]
-	},
-	"dataArrTwoNum": {
-		"0": "require",
-		"array": {
-			"0": "require",
-			"1": "key_number",
-			"array": ["require", "key_number", "int"]
-		}
-	},
-	"dataArrOneStr": {
-		"0": "require",
-		"array": {
-			"0": "key_hash",
-			"hash_config": {
-				"title": ["require", "string"],
-				"id": ["require", "int"]
-			}
-		}
-	},
-	"dataArrTwoStr": {
-		"0": "require",
-		"array": {
-			"0": "key_hash",
-			"hash_config": {
-				"company": {
-					"0": "require",
-					"array": {
-						"0": "key_hash",
-						"hash_config": {
-							"name": ["require", "string"],
-							"age": ["require", "int"]
-						}
-					}
-				},
-				"id": ["require", "int"]
-			}
-		}
-	},
-	"dataArrOneNumberOneStr": {
-		"0": "require",
-		"array": {
-			"0": "require",
-			"1": "key_number",
-			"array": {
-				"0": "key_hash",
-				"hash_config": {
-					"school": ["require", "string"],
-					"class": ["require", "int"]
-				}
-			}
-		}
-	},
-	"dataArrOneStrOneNumber": {
-		"0": "require",
-		"array": {
-			"0": "key_hash",
-			"hash_config": {
-				"range": {
-					"0": "require",
-					"array": ["require", "int", "key_number"]
-				},
-				"id": ["require", "int"]
-			}
-		}
-	}
-}';
-
-//echo json_encode($rule);
-//exit;
-
-class MyOb{
-
-}
-
-$myOb = new MyOb();
-//array('int','string','float','bool');
-$data = array(
-    'cnt'=>2,
-    'name'=>'aaaaaaaaaaa',
-    'price'=>1.02,
-    'isLogin'=>false,
-    'myOb'=>$myOb,
-    'email'=>'mqzhifu@sina.com',
-    'stream'=>2222,
-    'dataArrOneNum'=>array(1,6,9,10),
-    'dataArrTwoNum'=>array(
-        array(1,6,9,10),
-        array(2,4,6,8),
-    ),
-    'dataArrOneStr'=>array("aaaa"=>1,'id'=>2,'title'=>'last'),
-    'dataArrTwoStr'=>array(
-        "company"=>array("name"=>'z','age'=>12),
-        'id'=>2),
-    'dataArrOneNumberOneStr'=>array(
-        array('class'=>1,'school'=>'Oxford'),
-        array('class'=>2,'school'=>'Harvard'),
-    ),
-    'dataArrOneStrOneNumber'=>array(
-        'id'=>99,
-        'range'=>array(1,2,3,4,)
-    ),
-);
-
-Valid::match($data,$rule);
-
 //$rule = array(
 //    'cnt'=> array("int","numberMax:10","numberRange:2,15"),
 //    'name'=> array("require","string","lengthMin:10"),
@@ -183,6 +54,122 @@ Valid::match($data,$rule);
 //
 //);
 
+
+class MyOb{
+
+}
+
+$myOb = new MyOb();
+//array('int','string','float','bool');
+$data = array(
+    'price'=>1.02,
+//    'isLogin'=>false,
+    'myOb'=>$myOb,
+    'email'=>'mqzhifu@sina.com',
+    'stream'=>2222,
+    'dataArrOneNum'=>array(),
+    'dataArrOneNumRequire'=>array(123,456),
+    'dataArrTwoNum'=>array(
+        array(1,6,9,10),
+        array(2,4,6,8),
+    ),
+    'dataArrTwoNumRequire'=>array(
+        array(1,6,9,10),
+        array(2,4,6,8),
+    ),
+    'dataArrThreeNum'=>array(
+        array( array(1,6,9,10),array(2,4,6,8)),
+        array( array(1,3,5,7),array(2,4,6,12)),
+    ),
+
+//    'dataArrOneStr'=>array("aaaa"=>1,'id'=>2,'title'=>'last'),
+    'dataArrOneStr'=>array('title'=>'last'),
+    'dataArrOneStrRequire1'=>array('title'=>'last'),
+    'dataArrOneStrRequire2'=>array('title'=>'last','id'=>111),
+
+
+    'dataArrTwoStr'=>array(
+        "company"=>array("name"=>'z','age'=>12),
+        'id'=>2
+    ),
+
+
+    'dataArrTwoStrRequire'=>array(
+        "company"=>array("name"=>'z','age'=>12),
+        'id'=>2
+    ),
+
+    'dataArrOneNumberOneStr'=>array(
+        array('class'=>1,'school'=>'Oxford'),
+        array('class'=>2,'school'=>'Harvard'),
+    ),
+//    'dataArrOneNumberOneStr'=>null,
+    'dataArrOneStrOneNumber'=>array(
+        'id'=>99,
+        'range'=>array(1,2,3,4,)
+    ),
+);
+
+
+$rule = array(
+    'cnt'=> "int|numberMax:10|numberRange:2,15",
+    'name'=> "require|string|lengthMin:10",
+    'price'=> "require|float",
+//    'isLogin'=> "require|bool",
+    'myOb'=> "object",
+    'email'=> 'email|lengthRange:10,20',
+    'dataArrOneNumRequire'=> array("int|require"),
+    'dataArrOneNum'=> array("int"),
+    'dataArrTwoNum'=> array(array("int")),
+    'dataArrTwoNumRequire'=> array(array("require|int")),
+    'dataArrThreeNum'=> array(array(array("int"))),
+
+    'dataArrOneStr'=> array(
+        "title"=>"string",
+        "id"=>"int",
+    ),
+    'dataArrOneStrRequire1'=> array(
+        "title"=>"string|require",
+        "id"=>"int",
+    ),
+    'dataArrOneStrRequire2'=> array(
+        "title"=>"string|require",
+        "id"=>"int|require",
+    ),
+
+    'dataArrTwoStr'=> array(
+        "company"=>array(
+            "name"=>"string",
+            "age"=>"require|int"),
+
+        "id"=>"require|int",
+    ),
+
+
+    'dataArrTwoStrRequire'=> array(
+        "company"=>array(
+            "name"=>"require|string",
+            "age"=>"require|int"),
+
+        "id"=>"require|int",
+    ),
+
+    'dataArrOneNumberOneStr'=>array(
+        array(
+            "school"=>"string|require",
+            "class"=>"int|require",
+        ),
+    ),
+
+    'dataArrOneStrOneNumber'=>array(
+        "range"=>array("require|int"),
+        "id"=>"require|int",
+    ),
+
+);
+//echo json_encode($rule,true);exit;
+//$rule = json_encode($rule,true);
+\Jy\Common\Valid\Facades\Valid::match($data,$rule);
 
 //$class =new Valid();
 //$message = array('require'=>'就TMD得填写');

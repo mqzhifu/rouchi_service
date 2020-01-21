@@ -3,7 +3,7 @@
 
 #rule验证规则定义(json格式)<br/>
 #<br/>
-#参数名 : [验证类型]<br/>
+#参数名 : [验证类型1|验证类2|验证类型3...]<br/>
 
 #验证类型：标量与复杂<br/>
 #标量包括：整形、布尔、字符串等。还可以验证：长度、范围、邮箱等。<br/>
@@ -12,114 +12,74 @@
 
 #demo：参数名为 cnt ，规则为：整形   不能大于10   数字范围为2-15<br/>
 ```java
-"cnt": ["int", "numberMax:10", "numberRange:2,15"]
+"cnt": "int|numberMax:10|numberRange:2,15"
 ```
 #定义 KEY为数值 的数组<br/>
 ```java
-   "dataArrOneNum": {
-       "0": "require",
-       "array": ["require", "int", "key_number"]
-}
+   {"int|require"}
 ```
 
 #定义 KEY为字符串(hashTable) 的数组<br/>
 ```java
-	"dataArrOneStr": {
-		"0": "require",
-		"array": {
-			"0": "key_hash",
-			"hash_config": {
-				"title": ["require", "string"],
-				"id": ["require", "int"]
-			}
-		}
-	},
+	{"title":{"int|require"},"id"{{"int|require"}}}
 ```
 
-#数组会以<array>KEY值开头，后面是一个对象，用于修饰数组<br/>
-#其中：有对该数组KEY类型的描述子项，key_number|key_hash ，必填。<br/>
-#如果数组KEY类型为string类型，要多定义一个子项：hash_config，必填。<br/>
-```java
-"array": ["require", "int", "key_number"]
-```
 ```java
 $rule = '{
-	"cnt": ["int", "numberMax:10", "numberRange:2,15"],
-	"name": ["require", "string", "lengthMin:10"],
-	"price": ["require", "float"],
-	"isLogin": ["require", "bool"],
-	"myOb": ["require", "object"],
-	"email": ["email", "lengthRange:10,20"],
-	"dataArrOneNum": {
-		"0": "require",
-		"array": ["require", "int", "key_number"]
-	},
-	"dataArrTwoNum": {
-		"0": "require",
-		"array": {
-			"0": "require",
-			"1": "key_number",
-			"array": ["require", "key_number", "int"]
-		}
-	},
+{
+	"cnt": "int|numberMax:10|numberRange:2,15",
+	"name": "require|string|lengthMin:10",
+	"price": "require|float",
+	"myOb": "require|object",
+	"email": "email|lengthRange:10,20",
+	"dataArrOneNumRequire": ["int|require"],
+	"dataArrOneNum": ["int"],
+	"dataArrTwoNum": [
+		["int"]
+	],
+	"dataArrTwoNumRequire": [
+		["require|int"]
+	],
+	"dataArrThreeNum": [
+		[
+			["int"]
+		]
+	],
 	"dataArrOneStr": {
-		"0": "require",
-		"array": {
-			"0": "key_hash",
-			"hash_config": {
-				"title": ["require", "string"],
-				"id": ["require", "int"]
-			}
-		}
+		"title": "string",
+		"id": "int"
+	},
+	"dataArrOneStrRequire1": {
+		"title": "string|require",
+		"id": "int"
+	},
+	"dataArrOneStrRequire2": {
+		"title": "string|require",
+		"id": "int|require"
 	},
 	"dataArrTwoStr": {
-		"0": "require",
-		"array": {
-			"0": "key_hash",
-			"hash_config": {
-				"company": {
-					"0": "require",
-					"array": {
-						"0": "key_hash",
-						"hash_config": {
-							"name": ["require", "string"],
-							"age": ["require", "int"]
-						}
-					}
-				},
-				"id": ["require", "int"]
-			}
-		}
+		"company": {
+			"name": "string",
+			"age": "require|int"
+		},
+		"id": "require|int"
 	},
-	"dataArrOneNumberOneStr": {
-		"0": "require",
-		"array": {
-			"0": "require",
-			"1": "key_number",
-			"array": {
-				"0": "key_hash",
-				"hash_config": {
-					"school": ["require", "string"],
-					"class": ["require", "int"]
-				}
-			}
-		}
+	"dataArrTwoStrRequire": {
+		"company": {
+			"name": "require|string",
+			"age": "require|int"
+		},
+		"id": "require|int"
 	},
+	"dataArrOneNumberOneStr": [{
+		"school": "string|require",
+		"class": "int|require"
+	}],
 	"dataArrOneStrOneNumber": {
-		"0": "require",
-		"array": {
-			"0": "key_hash",
-			"hash_config": {
-				"range": {
-					"0": "require",
-					"array": ["require", "int", "key_number"]
-				},
-				"id": ["require", "int"]
-			}
-		}
+		"range": ["require|int"],
+		"id": "require|int"
 	}
-}';
-
+}
 //echo json_encode($rule);
 //exit;
 

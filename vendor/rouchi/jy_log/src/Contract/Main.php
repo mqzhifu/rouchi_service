@@ -3,21 +3,21 @@ namespace Jy\Log\Contract;
 
 abstract class Main  implements MainInterface, PsrLoggerInterface {
 
-    private $_delimiter = " | ";//一行内的消息块，分隔符
+    protected $_delimiter = " | ";//一行内的消息块，分隔符
 
-    private $_msgFormat = "";//自定义日志格式
+    protected $_msgFormat = "";//自定义日志格式
     //日志格式 ： 请求ID|日期时间|client-IP|进程ID|脚本文件名|类/方法|  XXX自定义信息  (rid|dt||cip|pid|tr )
-    private $_formatRule = array("rid","dt",'cip','pid','tr');
+    protected $_formatRule = array("rid","dt",'cip','pid','tr');
     //日志格式中，日期时间的格式
-    private $_msgFormatDatetime = "Y-m-d H:i:s";
+    protected $_msgFormatDatetime = "Y-m-d H:i:s";
 
-    private $_filter = "";//可以过滤掉 内容 中的一些特定字符 ，如：换行符
-    private $_deepTrace = 0;//追踪回溯层级,0:全部
+    protected $_filter = "";//可以过滤掉 内容 中的一些特定字符 ，如：换行符
+    protected $_deepTrace = 2;//追踪回溯层级,0:全部
 
-    private $_showScreen = 0;//输出到屏幕
+    protected $_showScreen = 0;//输出到屏幕
 
-    private $_replaceDelimiterLeft = "{";
-    private $_replaceDelimiterRight = "}";
+    protected $_replaceDelimiterLeft = "{";
+    protected $_replaceDelimiterRight = "}";
 
 
     function __construct(){
@@ -126,11 +126,7 @@ abstract class Main  implements MainInterface, PsrLoggerInterface {
 //                    $info .= $this->makeRequestId() . $this->_delimiter;
 //                    break;
                 case 'dt':
-                    $mtimestamp = sprintf("%.3f", microtime(true)); // 带毫秒的时间戳
-                    $timestamp = floor($mtimestamp); // 时间戳
-                    $milliseconds = round(($mtimestamp - $timestamp) * 1000); // 毫秒
-
-                    $info .= date($this->_msgFormatDatetime,time()). " ". $milliseconds .  $this->_delimiter;
+                    $info .= date($this->_msgFormatDatetime,time()). $this->_delimiter;
                     break;
                 case 'pid':
                     $info .= getmypid(). $this->_delimiter;
@@ -140,15 +136,19 @@ abstract class Main  implements MainInterface, PsrLoggerInterface {
                     $info .= $this->getClientIp(). $this->_delimiter;
                     break;
                 case 'tr':
-                    if(!$this->_deepTrace){
-                        break;
-                    }
                     $trace = debug_backtrace();
+                    $n = 0;
                     foreach ($trace as $k =>$v){
-                        if($this->_deepTrace && $k > $this->_deepTrace){
+                        if($k <= 4){//这2层的追踪没意义
+                            continue;
+                        }
+
+                        if($this->_deepTrace && $n > $this->_deepTrace){
                             break;
                         }
-                        $info .= ($v['class'] . "-" . $v['function'] ."#");
+
+                        $info .= ($v['class'] . "^^" . $v['function'] . "^^" .$v['line'] . "#");
+                        $n++;
                     }
                     break;
             }

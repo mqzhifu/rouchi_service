@@ -107,7 +107,6 @@ class Filter implements FilterInterface {
                         }elseif(is_array($value) && $value){
                             return 1;
                         }elseif(is_bool($value)){
-                            echo 555;
                             return 1;
                         }
 
@@ -189,6 +188,7 @@ class Filter implements FilterInterface {
         }
 
         if($max && $min){
+//            var_dump($max);var_dump($min);
             if($length >= $min && $length <=$max){
                 return 1;
             }
