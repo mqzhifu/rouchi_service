@@ -64,7 +64,7 @@ class Dispatcher
 
         $para = \Jy\App::$app->di->initMethod($namespace,$action,$controller);
         // hook
-        $result = call_user_func_array([$controller, $action], $para);
+        $result = call_user_func_array([$controller, $action], $para ?? []);
         // hook
 
         echo $result;

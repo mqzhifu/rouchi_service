@@ -17,7 +17,7 @@ class App
     {
         static::$app = new static();
 
-        //static::initException();
+        static::initException();
 
         static::$container = new \Jy\Container();
 
@@ -44,46 +44,56 @@ class App
 
     public static function initException()
     {
-        set_error_handler(['\Jy\App', 'handleError']);
-        register_shutdown_function(['\Jy\App', 'handleFatalError']);
-        set_exception_handler(['\Jy\App', 'exceptionError']);
+        set_error_handler(['\Jy\App', 'errorHandle']);
+        register_shutdown_function(['\Jy\App', 'shutdownHandle']);
+        set_exception_handler(['\Jy\App', 'exceptionHandle']);
     }
 
-    public static function exceptionError(\Throwable $message)
-    {
-        // 如果用户注册了自己的异常接受类，则继续传递
-        // 继承接口
-
-        // 上下文获取response，并返回
-        echo "<pre>";
-        print_r([
-            'ret' => $message->getLine(),
-            'file' => $message->getFile(),
-            'msg' => $message->getMessage(),
-            'trace' => $message->getTrace(),
-        ]);
-
-
-        exit();
-    }
-
-    public static function handleError($code, $message, $file, $line)
+    public static function exceptionHandle(\Throwable $message)
     {
         $param = [
+            'from' => __METHOD__,
+            'type' => $message->getCode(),
+            'file' => $message->getFile(),
+            'line' => $message->getLine(),
+            'message' => $message->getMessage(),
+            'trace' => $message->getTrace(),
+        ];
+
+        throw new JyException($param);
+    }
+
+    public static function errorHandle($code, $message, $file, $line)
+    {
+        $param = [
+            'from' => __METHOD__,
+            'type' => $code,
+            'message' => $message,
             'file' => $file,
             'line' => $line,
-            'context' => $context
+            'trace' => [],
         ];
-        throw new JyException($message, $code, $param);
+
+        throw new JyException($param);
     }
 
     /**
      * 异常结束捕获
      */
-    public static function handleFatalError()
+    public static function shutdownHandle()
     {
-        $error = error_get_last();
-        //Logger
-        // context destroy
+        $errorArr = error_get_last();
+        error_clear_last();
+        if (empty($errorArr)) return true;
+        $param = [
+            'from' => __METHOD__,
+            'type' => $errorArr['type'] ?? -1,
+            'message' => $errorArr['message'] ?? 'jy sys error',
+            'file' => $errorArr['file'] ?? __FILE__,
+            'line' => $errorArr['line'] ?? __LINE__,
+            'trace' => [],
+        ];
+
+        throw new JyException($param);
     }
 }

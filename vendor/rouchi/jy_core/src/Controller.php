@@ -18,6 +18,6 @@ class Controller
 
     public function json($data, $code = 200, $msg = "success")
     {
-        return $this->response->json($data, $code = 200, $msg = "success");
+        return $this->response->json($data, $code, $msg);
     }
 }
