@@ -52,43 +52,43 @@ class File extends Main {
     //警报日志
     function alert($message ,array $context = array()){
         $this->_level = "alert";
-        $info =  parent::emergency($message,$context);
+        $info =  parent::alert($message,$context);
         $this->flush($info);
     }
     //危险日志
     function critical($message ,array $context = array()){
         $this->_level = "critical";
-        $info =  parent::emergency($message,$context);
+        $info =  parent::critical($message,$context);
         $this->flush($info);
     }
     //错误日志
     function error($message ,array $context = array()){
         $this->_level = "error";
-        $info =  parent::emergency($message,$context);
+        $info =  parent::error($message,$context);
         $this->flush($info);
     }
 //    //警告日志
     function warning($message ,array $context = array()){
         $this->_level = "warning";
-        $info =  parent::emergency($message,$context);
+        $info =  parent::warning($message,$context);
         $this->flush($info);
     }
     //提醒日志
     function notice($message ,array $context = array()){
         $this->_level = "notice";
-        $info =  parent::emergency($message,$context);
+        $info =  parent::notice($message,$context);
         $this->flush($info);
     }
 //  //普通日志
     function info($message ,array $context = array()){
         $this->_level = "info";
-        $info =  parent::emergency($message,$context);
+        $info =  parent::info($message,$context);
         $this->flush($info);
     }
     //调试日志
     function debug($message ,array $context = array()){
         $this->_level = "debug";
-        $info =  parent::emergency($message,$context);
+        $info =  parent::debug($message,$context);
         $this->flush($info);
     }
 

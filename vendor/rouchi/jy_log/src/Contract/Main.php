@@ -26,13 +26,19 @@ abstract class Main  implements MainInterface, PsrLoggerInterface {
     abstract function flush($info);
 
 
-    function formatMsg($message ,array $context = array()){
+    function formatMsg($message ,array $context = array() ,$jsonEncode = 1){
         if(!$message){
             throw new \Exception("message is null.");
         }
         $formatInfo = $this->placeholder($message,$context);
-        $formatInfo = json_encode( $this->replaceFormatMsg($formatInfo));
-
+        $formatInfo = $this->replaceFormatMsg($formatInfo);
+//        if($is){
+//            var_dump($this->replaceFormatMsg($formatInfo));exit;
+//        }
+        if($jsonEncode){
+            $formatInfo = json_encode($formatInfo,JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE);
+        }
+//        $formatInfo = json_encode( $this->replaceFormatMsg($formatInfo),JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE);
         if($this->_showScreen == 1){
             echo $formatInfo . "\r\n";
         }
@@ -54,7 +60,7 @@ abstract class Main  implements MainInterface, PsrLoggerInterface {
     }
     //警告
     function error($message ,array $context = array()){
-        return $this->formatMsg($message,$context);
+        return $this->formatMsg($message,$context,0);
     }
     //致命
     function warning($message ,array $context = array()){
@@ -122,9 +128,9 @@ abstract class Main  implements MainInterface, PsrLoggerInterface {
         foreach ($format as $k=>$rule){
             $rule = trim($rule);
             switch ($rule){
-//                case 'rid':
-//                    $info .= $this->makeRequestId() . $this->_delimiter;
-//                    break;
+                case 'rid':
+                    $info .= $this->makeRequestId() . $this->_delimiter;
+                    break;
                 case 'dt':
                     $info .= date($this->_msgFormatDatetime,time()). $this->_delimiter;
                     break;
@@ -136,21 +142,21 @@ abstract class Main  implements MainInterface, PsrLoggerInterface {
                     $info .= $this->getClientIp(). $this->_delimiter;
                     break;
                 case 'tr':
-                    $trace = debug_backtrace();
-                    $n = 0;
-                    foreach ($trace as $k =>$v){
-                        if($k <= 4){//这2层的追踪没意义
-                            continue;
-                        }
-
-                        if($this->_deepTrace && $n > $this->_deepTrace){
-                            break;
-                        }
-
-                        $info .= ($v['class'] . "^^" . $v['function'] . "^^" .$v['line'] . "#");
-                        $n++;
-                    }
-                    break;
+//                    $trace = debug_backtrace();
+//                    $n = 0;
+//                    foreach ($trace as $k =>$v){
+//                        if($k <= 4){//这2层的追踪没意义
+//                            continue;
+//                        }
+//
+//                        if($this->_deepTrace && $n > $this->_deepTrace){
+//                            break;
+//                        }
+//
+//                        $info .= ($v['class'] . "^^" . $v['function'] . "^^" .$v['line'] . "#");
+//                        $n++;
+//                    }
+//                    break;
             }
         }
 
@@ -162,6 +168,10 @@ abstract class Main  implements MainInterface, PsrLoggerInterface {
         }
 
         $info .= $this->_delimiter . $message ;
+
+
+
+
         return $info;
     }
     // 获取客户端IP地址
@@ -187,7 +197,6 @@ abstract class Main  implements MainInterface, PsrLoggerInterface {
         if(is_object($message)){
             throw new \Exception("message type error: is object.");
         }
-        $message = json_encode($message);
         if(!$context){
             return $message;
         }
@@ -195,7 +204,14 @@ abstract class Main  implements MainInterface, PsrLoggerInterface {
         foreach ($context as $key => $v) {
 //            var_dump($search);exit;
 //            var_dump($search);
-            $message = str_replace($this->_replaceDelimiterLeft . $key . $this->_replaceDelimiterRight,$v,$message);
+            if(is_array($message)){
+                foreach ($message as $k2=>$msg) {
+                    $message[$k2] = str_replace($this->_replaceDelimiterLeft . $key . $this->_replaceDelimiterRight,$v,$message[$k2]);
+                }
+
+            }else{
+                $message = str_replace($this->_replaceDelimiterLeft . $key . $this->_replaceDelimiterRight,$v,$message);
+            }
         }
 
         return $message;

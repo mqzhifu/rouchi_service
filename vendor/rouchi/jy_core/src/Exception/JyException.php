@@ -17,21 +17,25 @@ class JyException extends \ErrorException
             $fromType = $param['from'] ?? 'sys';
             unset($param['from']);
 
-            //echo "<pre>";
-            //print_r($param);
-            //$debug = debug_backtrace();
-            //print_r($debug);
-
             ob_start();
             debug_print_backtrace();
             $content = ob_get_clean();
-            $contetArr = explode("\n", $content);
-            array_shift($contetArr);
-            $content = implode("\n", $contetArr);
+
+            if( strpos( PHP_OS ,"WIN" ) !== false){
+                $logContent = "";
+                $a = explode(",",$content);
+                foreach ($a as $k=>$v) {
+                    $logContent .= $v .PHP_EOL;
+                }
+            }else{
+                $contetArr = explode("\n", $content);
+                array_shift($contetArr);
+                $logContent = implode("\n", $contetArr);
+            }
 
             echo new \Jy\JSONResponse(['code' => $param['type'], 'message' => $param['message'], 'data' => []]);
 
-            Log::error($content);
+            Log::error($logContent);
         } catch (\Throwable $e) {
 
             echo new \Jy\JSONResponse([
