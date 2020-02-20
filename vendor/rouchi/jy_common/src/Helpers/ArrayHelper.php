@@ -16,7 +16,7 @@ class ArrayHelper
 {
 
     /**
-     * 获取数组中的元素，支持深维度直接获取，机：key可以时点号隔开的形式 eg：order.iterm.id
+     * 获取数组中的元素，支持深维度直接获取，即：key可以是点号隔开的形式 eg：order.iterm.id
      *
      * @param $arr
      * @param $key
@@ -78,4 +78,46 @@ class ArrayHelper
         return true;
     }
 
+    public static function mergeItem(array &$arr, $key, $val):bool
+    {
+        $keyItem = explode(".", $key);
+        $firstKey  = array_shift($keyItem);
+
+        if (!empty($keyItem)) {
+            !isset($arr[$firstKey]) && $arr[$firstKey] = [];
+            return static::mergeItem($arr[$firstKey], implode(".", $keyItem), $val);
+        }
+
+        $arr[$firstKey][] = $val;
+
+        return true;
+    }
+
+    public static function popItem(array &$arr, $key):bool
+    {
+        $keyItem = explode(".", $key);
+        $firstKey  = array_shift($keyItem);
+
+        if (!empty($keyItem) && isset($arr[$firstKey])) {
+            return static::popItem($arr[$firstKey], implode(".", $keyItem));
+        }
+
+        isset($arr[$firstKey]) && is_array($arr[$firstKey]) &&  array_pop($arr[$firstKey]);
+
+        return true;
+    }
+
+    public static function shiftItem(array &$arr, $key):bool
+    {
+        $keyItem = explode(".", $key);
+        $firstKey  = array_shift($keyItem);
+
+        if (!empty($keyItem) && isset($arr[$firstKey])) {
+            return static::shiftItem($arr[$firstKey], implode(".", $keyItem));
+        }
+
+        isset($arr[$firstKey]) && is_array($arr[$firstKey]) &&  array_shift($arr[$firstKey]);
+
+        return true;
+    }
 }

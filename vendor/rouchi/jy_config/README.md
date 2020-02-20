@@ -19,9 +19,15 @@
 #### 使用案例
 ```
     use Jy\Facade\Config;
-   
+
    ...
-   
-   # file 为 ROUCHI_CONF_PATH 下的文件名
+
+   # 配置文件的根目录为：ROUCHI_CONF_PATH
+
+   #1, 指定file和key
    Config::get(file, item); # item也可以指定深维度的数据， item.sub_item
+   Config::get('database', 'mysql.read.host');
+
+   #2, 或者直接全部通过点号获取。但是需要加上@前缀
+   Config::get('@database.mysql.read.host');
 ```

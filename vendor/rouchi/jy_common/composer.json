@@ -10,12 +10,16 @@
         }
     ],
     "require": {
-        "php": "^7.2"
+        "php": "^7.2",
+        "php-amqplib/php-amqplib": "*"
     },
     "autoload": {
         "psr-4" : {
             "Jy\\Common\\" : "src/"
-        }
+        },
+        "files" : [
+            "src/Helpers/CommonHelper.php"
+        ]
     }
 }
 

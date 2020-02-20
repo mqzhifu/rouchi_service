@@ -1,2 +1,333 @@
-# jy_common
+数据验证
+=============
+1. 格式验证，如：范围1-100 、长度：1-20、手机号、邮箱
+2. 数据类型验证：如：int string bool
+
+输写验证格式 
+---------------
+key : [验证类型1|验证类2|验证类型3...]  
+
+如下DEMO:  
+"cnt": "int|numberMax:10|numberRange:2,15"  
+>cnt就是key ，后面的部分 就是你想要验证的类型
+ 
+验证类型：标量与复杂
+----------------  
+
+标量  
+>包括：整形、布尔、字符串等。还可以验证：长度、范围、邮箱等。   
+
+复杂 
+>复杂包括：数组（多维，递归），对象。  
+>具体支持类型，可参考Jy\Common\Valid\Valid\filter  
+
+
+例子：
+-----------------------------
+
+demo1
+>参数名为 cnt ，规则为：整形   不能大于10   数字范围为2-15  
+```java
+"cnt": "int|numberMax:10|numberRange:2,15"
+```
+demo2  
+>定义 KEY为数数组类型，且数组里面都是int|必填写  
+```java
+   {"int|require"}
+```
+
+demo3  
+>定义 KEY为字符串(hashTable) 的数组  
+```java
+	{"title":{"int|require"},"id"{{"int|require"}}}
+```
+
+
+详细使用规则如下：
+---------------------------
+```java
+$rule = '{
+{
+	"cnt": "int|numberMax:10|numberRange:2,15",
+	"name": "require|string|lengthMin:10",
+	"price": "require|float",
+	"myOb": "require|object",
+	"email": "email|lengthRange:10,20",
+	"dataArrOneNumRequire": ["int|require"],
+	"dataArrOneNum": ["int"],
+	"dataArrTwoNum": [
+		["int"]
+	],
+	"dataArrTwoNumRequire": [
+		["require|int"]
+	],
+	"dataArrThreeNum": [
+		[
+			["int"]
+		]
+	],
+	"dataArrOneStr": {
+		"title": "string",
+		"id": "int"
+	},
+	"dataArrOneStrRequire1": {
+		"title": "string|require",
+		"id": "int"
+	},
+	"dataArrOneStrRequire2": {
+		"title": "string|require",
+		"id": "int|require"
+	},
+	"dataArrTwoStr": {
+		"company": {
+			"name": "string",
+			"age": "require|int"
+		},
+		"id": "require|int"
+	},
+	"dataArrTwoStrRequire": {
+		"company": {
+			"name": "require|string",
+			"age": "require|int"
+		},
+		"id": "require|int"
+	},
+	"dataArrOneNumberOneStr": [{
+		"school": "string|require",
+		"class": "int|require"
+	}],
+	"dataArrOneStrOneNumber": {
+		"range": ["require|int"],
+		"id": "require|int"
+	}
+}
+//echo json_encode($rule);
+//exit;
+
+class MyOb{
+
+}
+
+$myOb = new MyOb();
+//array('int','string','float','bool');
+$data = array(
+    'cnt'=>2,
+    'name'=>'aaaaaaaaaaa',
+    'price'=>1.02,
+    'isLogin'=>false,
+    'myOb'=>$myOb,
+    'email'=>'mqzhifu@sina.com',
+    'stream'=>2222,
+    'dataArrOneNum'=>array(1,6,9,10),
+    'dataArrTwoNum'=>array(
+        array(1,6,9,10),
+        array(2,4,6,8),
+    ),
+    'dataArrOneStr'=>array("aaaa"=>1,'id'=>2,'title'=>'last'),
+    'dataArrTwoStr'=>array(
+        "company"=>array("name"=>'z','age'=>12),
+        'id'=>2),
+    'dataArrOneNumberOneStr'=>array(
+        array('class'=>1,'school'=>'Oxford'),
+        array('class'=>2,'school'=>'Harvard'),
+    ),
+    'dataArrOneStrOneNumber'=>array(
+        'id'=>99,
+        'range'=>array(1,2,3,4,)
+    ),
+);
+
+Valid::match($data,$rule);
+```
+  
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+rabbitMq 队列
+============
+注意：依赖 "php-amqplib/php-amqplib": composer update  
+具体代码逻辑 可参考TEST目录下的client.php server.php
+
+角色描述
+--------------
+product:生产者，用于定义消息内容，及发送消息  
+consumer:消费者，拿到生产者的消费，进行逻辑处理。  
+rabbitmq-server:接收 product 发送的消息 , push 给consumer  
+
+
+生产者-基础流程
+--------------
+1. 先定义一个生产类(如：ProductSms)，只需要继承一个基类(MessageQueue)即可
+```java
+use Jy\Common\MsgQueue\MsgQueue\MessageQueue;
+class ProductSms extens MessageQueue{
+    ..doing something..
+}
+```
+2. 再定义一个通信协议（get/set）类
+```java
+class ProductSmsBean{
+    ..doing something..
+}
+```
+>生产者的基础定义工作即结束，下面开始代码操作
+
+3. 初始化要发送的数据(使用刚刚定义好的bean类)
+```javascript
+$ProductSmsBean = new ProductSmsBean();
+$ProductSmsBean->_id = 1;
+$ProductSmsBean->_msg = "is finish.";
+$ProductSmsBean->_type = "order";
+```
+
+4. 发送一条普通的消息
+```javascript
+$productSms = new ProductSms();
+$productSms->send($ProductSmsBean);
+```
+
+5. 发送一条延迟5秒的消息
+```java
+$arguments = array("expiration"=>5000);
+$productSms->send($ProductSmsBean,$arguments);
+```
+
+>最简单的demo,即完成了.
+
+
+#消息参数
+
+参数名  | 说明  |
+ ---- | ----- |
+ expiration | 失效时间 |
+content_type | MIME类型  | 
+content_encoding | 传输格式 | 
+Priority | 权限值 | 
+correlation_id | 相互关联ID | 
+application_headers | 头信息 | 
+message_id | 扩展字段 | 
+Timestamp | 时间 | 
+Type | 扩展字段 | 
+user_id | 扩展字段 | 
+app_id | 扩展字段 | 
+cluster_id | 扩展字段 | 
+reply_to | 消息被发送者处理完后,返回回复时执行的回调(在rpc时会用到) | 
+
+>消息参数除了日常的，还有很多扩展字段可以用上。比如：message_id用于可靠性。type:可以用做分类给consumer用.  
+>其中 message_id type Timestamp 基类已占用 ，send的时候，由基类自动生成   
+
+
+
+消费者-基础流程
+--------------
+1. 快速开启一个consumer ,监听一个event
+2. 定义方式 开启一个consumer. 监听多个event
+
+
+快速开启consumer 监听某一个事件队列  
+```java
+
+$productSms = new ProductSms();
+$userCallback = function ($recall){
+    echo "im in user callback func \n";
+};
+$productSms->groupSubscribe($userCallback,"dept_A");
+
+```
+
+1. 先要找到你关心的消息类（event），也就是生产者定义的bean
+2. 设定标识，dept_A ，这是个标识即队列名(event name)，如果存在~ok。如不存在 就会新建一个队列，接收product消息  
+>也就是说：创建队列/选择队列 ，绑定队列 这些基操作 已由基类帮你完成。  
+>业务人员可随意使用，随意创建  
+
+定义方式 开启一个consumer. 监听多个event
+```javascript
+class ConsumerSms extends MessageQueue{
+    function __construct()
+    {
+        parent::__construct();
+    }
+
+    function init(){
+        $queueName = "test.header.delay.sms";
+
+        $this->setBasicQos(1);
+//        $durable = true;$autoDel = false;
+//        $this->createQueue();
+
+        $ProductSmsBean = new ProductSmsBean();
+        $handleSmsBean = array($this,'handleSmsBean');
+        $this->setListenerBean($ProductSmsBean->getBeanName(),$handleSmsBean);
+
+        $ProductUserBean = new ProductUserBean();
+        $handleUserBean = array($this,'handleUserBean');
+        $this->setListenerBean($ProductUserBean->getBeanName(),$handleUserBean);
+
+        $this->subscribe($queueName,null);
+    }
+
+    function handleSmsBean($data){
+        echo "im sms bean handle \n ";
+        return array("return"=>"ack");
+    }
+
+    function handleUserBean($data){
+        echo "im user bean handle \n ";
+        return array("return"=>"reject",'requeue'=>false);
+    }
+}
+```
+1. 定义一个新类(ConsumerSms)，继承基类(MessageQueue)
+2. 找到你关心的消息类（event），也就是生产者定义的bean
+3. 将N个bean 绑定到基类上，并设置回调处理函数  ( setListenerBean 方法 )
+4. 启动订阅
+
+#编程模式
+>rabbitmq 是基于erlang模式，全并发模式(channel)。也就是全异步模式(基类里我规避了这种方式，但牺牲部分性能)  
+>大部分你的操作，比如：send 实际上并不是以同步方式拿到mq返回的值。  
+>很多业务都是基于callback function 方式，所以使用时请注意下.  
+
+
+#消息可靠性
+>业务人员在投递/消费时，最好借助三方软件，如：redis|mysql ，持久化该消息状态。避免丢消息或重复消费，也方便跟踪  
+>理论上：事务模式更靠谱，但是跟确认模式差了10倍左右（官方给的是100倍左右）。  
+>建议：对一致性可靠性要求比较高的业务，如：订单业务考虑事务。次级重要的用确认模式，不是太重要的可以正常发送即可。  
+>注：事务模式与确认互斥
+
+#简单压侧效果
+>win7 PHP单进程 循环给rebbitmq发消息  
+>普通模式： 10000条，时间：0.32-0.4     100000条：4.1-3.59 . 官方说每秒10万条，可能LINUX下更快  
+>确认模式： 10000条，时间：0.42-0.5    100000条：5  
+>事务模式： 10000条，时间：2.4-2.7    100000条：好吧，我放弃了。。。超时状态  
+
+#重试机制
+>当一条消息处理过程中发生异常，会被重新发送到队列，以阶梯的形式，可再次读取  
+>如：第一次发生异常该方向会重新回到到队列中但是会在5秒之后才出现，第2次是10秒，第3次是30....     
+>具体阶梯的时间可设置，具体重试次数可设置。能很好的防止网络抖动或者LINUX假死  
+
+#各种配置注意：
+>正常新开一个队列，系统默认最大值为10W条，超出即会丢掉（如配置死信队列会进到死信队列中）  
+>正常新建队列不建议使用定义化参数，比如：开启自动ACK、autoDel(自动删除)、  
+>正常新建队列最好都设置持久化属性，投递消息也是。至少MQ挂了重启，还可以找回数据  
+>设置消息的TTL时，尽量要考虑一但消息堆积过多，还没处理过，部分数据就失效且丢失了  
+>编写consumer一定要做好异常捕获，不然进程一但挂了，消息可是无止境堆积。  
+
+#追踪
+>mq不提供太多可追踪的工具，可以使用后台管理系统。但做不到100%  
+>建议，业务方，最好把发送的一些消息在自己业务上做持久化。  
+
+#集群
+>目前暂时没有集群，到达量后，会开启镜像模式集群，防止单点故障  
+
 

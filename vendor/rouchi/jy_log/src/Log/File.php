@@ -31,6 +31,9 @@ class File extends Main {
     private $_fd = null;//类内部使用，缓存文件句柄，后期优化
     private $_level = "";//类内部使用
 
+    private $_buffMem = 0;//是否开启 一次请求，所有写日志都只是先缓存，最后再flush到文件中。减少IO
+    private $_buffContent = [];
+
     function __construct(){
         parent::__construct();
     }
@@ -155,6 +158,23 @@ class File extends Main {
 //        fwrite($fd,$info);
 //        fclose($fd);
     }
+
+    function buffFlushFile(){
+        if(!$this->_buffContent){
+            return flase;
+        }
+
+        $contentStr = "";
+        foreach ($this->_buffContent as $k=>$v) {
+            $info = $this->replaceCalledInfo($v);
+            $info = $this->replaceSysBaseInfo($info);
+            $contentStr .= $info . $this->_wrap;
+
+        }
+        $filePath = $this->_writePath . "/" .$this->_level. $this->_ext;
+        $this->writeFile($filePath,$contentStr);
+    }
+
     //持久化到文件中
     function flush($info){
         $this->initPath($this->_level);
@@ -182,7 +202,11 @@ class File extends Main {
 
         $info = $info . $this->_wrap;
 
-        $this->writeFile($filePath,$info);
+        if(!$this->_buffMem){
+            $this->writeFile($filePath,$info);
+        }else{
+            $this->_buffContent[] = $info;
+        }
     }
     //检查设置路径正确否
     function checkBasePath(){

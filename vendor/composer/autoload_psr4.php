@@ -7,6 +7,7 @@ $baseDir = dirname($vendorDir);
 
 return array(
     'Rouchi\\' => array($baseDir . '/'),
+    'PhpAmqpLib\\' => array($vendorDir . '/php-amqplib/php-amqplib/PhpAmqpLib'),
     'Jy\\Log\\' => array($vendorDir . '/rouchi/jy_log/src'),
     'Jy\\Db\\' => array($vendorDir . '/rouchi/jy_db/src'),
     'Jy\\Config\\' => array($vendorDir . '/rouchi/jy_config/src'),

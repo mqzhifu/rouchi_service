@@ -10,7 +10,8 @@
         }
     ],
     "require": {
-        "php": "^7.2"
+        "php": "^7.2",
+        "rouchi/jy_common": "*"
     },
     "autoload": {
         "psr-4" : {

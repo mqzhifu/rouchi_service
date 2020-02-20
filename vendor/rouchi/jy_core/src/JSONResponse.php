@@ -18,4 +18,9 @@ class JSONResponse {
     {
         return json_encode($this->data, JSON_UNESCAPED_UNICODE) ?: json_last_error_msg();
     }
+
+    public function getData()
+    {
+        return $this->data;
+    }
 }

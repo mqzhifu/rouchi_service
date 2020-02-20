@@ -1,6 +1,6 @@
 <?php
 
-namespace Jy\Base\Container;
+namespace Jy\Contract\Container;
 
 
 abstract class ContainerAbstract implements ContainerInterface

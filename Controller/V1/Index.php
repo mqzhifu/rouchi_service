@@ -6,6 +6,7 @@ use Jy\Controller;
 
 use Jy\Facade\Config;
 use Jy\Facade\DB;
+use Jy\Facade\Log;
 use Jy\Facade\Redis;
 use Jy\Request;
 use \Jy\Common\Valid\Facades\Valid;
@@ -14,11 +15,12 @@ class Index extends Controller
 {
     /**
 
-     * @valid {"a":"int|require"}
+     * @valid {"a":"int"}
 
      */
     public function index(Valid $valid , Request $request)
     {
+        echo 444;
         var_dump($request);
         $rule = array(
             "a"=>'int|require');

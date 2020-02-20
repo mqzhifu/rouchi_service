@@ -6,10 +6,18 @@ namespace Composer\Autoload;
 
 class ComposerStaticInit1e055453c6afef1a0906cc307e5a028f
 {
+    public static $files = array (
+        '3ad293d8702f9ae9f78899f676b49a6a' => __DIR__ . '/..' . '/rouchi/jy_common/src/Helpers/CommonHelper.php',
+    );
+
     public static $prefixLengthsPsr4 = array (
         'R' => 
         array (
             'Rouchi\\' => 7,
+        ),
+        'P' => 
+        array (
+            'PhpAmqpLib\\' => 11,
         ),
         'J' => 
         array (
@@ -25,6 +33,10 @@ class ComposerStaticInit1e055453c6afef1a0906cc307e5a028f
         'Rouchi\\' => 
         array (
             0 => __DIR__ . '/../..' . '/',
+        ),
+        'PhpAmqpLib\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/php-amqplib/php-amqplib/PhpAmqpLib',
         ),
         'Jy\\Log\\' => 
         array (

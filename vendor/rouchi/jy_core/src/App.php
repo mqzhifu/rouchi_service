@@ -4,6 +4,8 @@ namespace Jy;
 
 use Jy\Exception\JyException;
 use Jy\Facade\Log;
+use Jy\Common\RequestContext\RequestContext;
+use Jy\Facade\Trace;
 
 class App
 {
@@ -21,8 +23,13 @@ class App
 
         static::$container = new \Jy\Container();
 
-        static::$container = new \Jy\Container();
         static::$checkFramework = new \Jy\Util\CheckFramework();
+
+        // 上下文数据的初始化
+        static::initRequestContext();
+
+        // tracing
+        Trace::setServiceReceiveTrace();
 
         // 常量 配置 todo
         //...
@@ -31,9 +38,33 @@ class App
     public static function run()
     {
         Log::info("APP start run...");
+
+        date_default_timezone_set('PRC');
+
+        RequestContext::create();
+
         static::init();
+
         static::$checkFramework->check();
+
         static::$app->dispatcher->dispatcher();
+    }
+
+    public static function initRequestContext()
+    {
+
+        if (!RequestContext::isInSwooleCoroutine()) {
+            // data pre deal
+            RequestContext::put('request_user_data', \Jy\App::$app->request->getUserData());
+            RequestContext::put('request_data', \Jy\App::$app->request->getRequestParams());
+            RequestContext::put('request_sys_params', \Jy\App::$app->request->getRequestSysParams());
+            RequestContext::put('request_trace_cs_data', \Jy\App::$app->request->getRequestTraceParams());
+
+            unset($_GET);
+            unset($_POST);
+            unset($_REQUEST);
+        }
+
     }
 
     public function __get($class)
@@ -58,6 +89,7 @@ class App
             'line' => $message->getLine(),
             'message' => $message->getMessage(),
             'trace' => $message->getTrace(),
+            'e' => $message
         ];
 
         throw new JyException($param);
@@ -72,6 +104,7 @@ class App
             'file' => $file,
             'line' => $line,
             'trace' => [],
+            'e' => new \ErrorException($message, $code, E_ERROR, $file, $line),
         ];
 
         throw new JyException($param);
@@ -93,6 +126,7 @@ class App
             'line' => $errorArr['line'] ?? __LINE__,
             'trace' => [],
         ];
+        $param['e'] = new \ErrorException($param['message'], $param['type'], E_ERROR, $param['file'], $param['line']);
 
         throw new JyException($param);
     }

@@ -9,7 +9,7 @@ abstract class BaseFacade
 
     abstract public function getFacadeAccessor();
 
-    public function getProcesser()
+    public static function getProcesser()
     {
         return static::getFacadeAccessor();
     }

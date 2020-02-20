@@ -9,7 +9,7 @@ class DBComponent
 {
     public static $instances = array();
 
-    public static function getInstance($model = '', $name = '', $type = "write")
+    public static function getInstance($name = '', $type = "write", $model = '')
     {
         if (empty($model)) {
            $model = "database";
@@ -25,13 +25,20 @@ class DBComponent
             return self::$instances[$key];
         }
 
-        $mysqlConfig = Config::get($model, $name);
+        $mysqlConfig = Config::get($model, "connections.".$name);
+        if (empty($mysqlConfig)) {
+            $mysqlConfig = Config::get($model, $name);
+        }
+
+        if (empty($mysqlConfig)) {
+            throw new \Exception('database conf is empty. pls check db conf');
+        }
 
         $dbConfig = array(
-            'host' => $mysqlConfig[$type]['host'],
-            'port' => $mysqlConfig[$type]['port'],
-            'user' => $mysqlConfig[$type]['username'],
-            'passwd' => $mysqlConfig[$type]['password'],
+            'host' => $mysqlConfig[$type]['host'] ?? $mysqlConfig['host'],
+            'port' => $mysqlConfig[$type]['port'] ?? $mysqlConfig['port'],
+            'user' => $mysqlConfig[$type]['username'] ?? $mysqlConfig['username'],
+            'passwd' => $mysqlConfig[$type]['password'] ?? $mysqlConfig['password'],
             'dbname' => $mysqlConfig['database'],
             'timeout' => 2,
         );
@@ -41,48 +48,48 @@ class DBComponent
         return self::$instances[$key];
     }
 
-    public static function beginTransaction()
+    public static function beginTransaction($name = '', $type = "write", $model = '')
     {
-        return static::getInstance('', '', "write")->beginTransaction();
+        return static::getInstance($name, $type, $model)->beginTransaction();
     }
 
-    public static function commit()
+    public static function commit($name = '', $type = "write", $model = '')
     {
-        return static::getInstance('', '', "write")->commit();
+        return static::getInstance($name, $type, $model)->commit();
     }
 
-    public static function rollBack()
+    public static function rollBack($name = '', $type = "write", $model = '')
     {
-        return static::getInstance('', '', "write")->rollBack();
+        return static::getInstance($name, $type, $model)->rollBack();
     }
 
-    public static function update($sql, $param = array())
+    public static function update($sql, $param = array(), $name = '', $type = "write", $model = '')
     {
-        return static::getInstance('', '', "write")->update($sql, $param);
+        return static::getInstance($name, $type, $model)->update($sql, $param);
     }
 
-    public static function updateById($table, $id, $param = array())
+    public static function updateById($table, $id, $param = array(), $name = '', $type = "write", $model = '')
     {
-        return static::getInstance('', '', "write")->updateById($table,$id,$param);
+        return static::getInstance($name, $type, $model)->updateById($table,$id,$param);
     }
 
-    public static function insert($table, $params = array())
+    public static function insert($table, $params = array(), $name = '', $type = "write", $model = '')
     {
-        return static::getInstance('', '', "write")->insert($table, $params);
+        return static::getInstance($name, $type, $model)->insert($table, $params);
     }
 
-    public static function multiInsert($table, $params = array())
+    public static function multiInsert($table, $params = array(), $name = '', $type = "write", $model = '')
     {
-        return static::getInstance('', '', "write")->multiInsert($table, $params);
+        return static::getInstance($name, $type, $model)->multiInsert($table, $params);
     }
 
-    public static function findOne($sql, $param = array(), $master = false)
+    public static function findOne($sql, $param = array(), $master = false, $name = '', $model = '')
     {
-        return static::getInstance('', '', $master == true ? "write" : "read")->findOne($sql, $param);
+        return static::getInstance($name, $master == true ? "write" : "read", $model)->findOne($sql, $param);
     }
 
-    public static function findAll($sql, $param = array(), $master = false)
+    public static function findAll($sql, $param = array(), $master = false, $name = '', $model = '')
     {
-        return static::getInstance('', '', $master == true ? "write" : "read")->findAll($sql, $param);
+        return static::getInstance($name, $master == true ? "write" : "read", $model)->findAll($sql, $param);
     }
 }

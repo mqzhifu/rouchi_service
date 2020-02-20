@@ -3,7 +3,7 @@
 namespace Jy\Contract\Exception;
 
 
-class JyExceptionInterface
+interface JyExceptionInterface
 {
     public function handle($exception);
 }

@@ -238,6 +238,18 @@ abstract class Main  implements MainInterface, PsrLoggerInterface {
             }
         }
 
+        $info = $this->replaceCalledInfo($info);
+        $info = $this->replaceSysBaseInfo($info);
+
+        if(!$info){
+            throw new \Exception("message format type value is error.");
+        }
+
+//        $info['content'] .= $message ;
+        return $info;
+    }
+
+    public function replaceCalledInfo($info){
         if($this->_calledInfo){
             foreach ($info as $k=>$v) {
                 foreach ($this->_calledInfo as $k2=>$v2) {
@@ -248,8 +260,11 @@ abstract class Main  implements MainInterface, PsrLoggerInterface {
                 }
             }
         }
+        return $info;
+    }
 
-        if($this->_sysBaseInfo){
+    public function replaceSysBaseInfo($info){
+        if($this->_calledInfo){
             foreach ($info as $k=>$v) {
                 foreach ($this->_sysBaseInfo as $k2=>$v2) {
                     if($k2 == $k){
@@ -259,14 +274,9 @@ abstract class Main  implements MainInterface, PsrLoggerInterface {
                 }
             }
         }
-
-        if(!$info){
-            throw new \Exception("message format type value is error.");
-        }
-
-//        $info['content'] .= $message ;
         return $info;
     }
+
     // 获取客户端IP地址
     function getClientIp() {
         static $ip = NULL;

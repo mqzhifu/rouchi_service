@@ -3,56 +3,42 @@
 namespace Jy;
 
 use Jy\Util\InstanceTrait;
+use Jy\Common\RequestContext\RequestContext;
 
 class Request
 {
 
     use InstanceTrait;
 
-    private $module;
-    private $action=null;
-    private $method=null;
-    private $_hostInfo = null;
-    private $_securePort = null;
-    private $_port = null;
-    private $_isSecure = null;
-
-    private $params;
-    private $posts;
-    private $gets;
-    private $args;
-    private $jsons;
-
-    public $methodParam = '_method';
-
     private function __construct()
     {
-        list($this->module, $this->action) = \Jy\App::$app->router->getRouterInfo();
-
-        $this->params = array_merge($_REQUEST, Router::$ARGS);
-        $this->posts = $_POST;
-        $this->gets = $_GET;
-        $this->method = $this->getMethod();
+        //.
     }
 
     public function getModule()
     {
-        return $this->module;
+        return \Jy\App::$app->router->getRequestController();
     }
 
     public function getAction()
     {
-        return $this->action;
+        return \Jy\App::$app->router->getRequestAction();
+    }
+
+    public function getVersion()
+    {
+        return \Jy\App::$app->router->getRequestVersion();
+    }
+
+    public function getProtocol()
+    {
+        return \Jy\App::$app->router->getRequestProtocol();
     }
 
     public function getMethod()
     {
-        if (
-            isset($_POST[$this->methodParam])
-            && !in_array(strtoupper($_POST[$this->methodParam]), ['GET', 'HEAD', 'OPTIONS'], true)
-        ) {
-            return strtoupper($_POST[$this->methodParam]);
-        }
+        if ($this->getProtocol() === 'rpc') return "RPC";
+        if ($this->getProtocol() === 'cli') return "CLI";
 
         if (isset($_SERVER['REQUEST_METHOD'])) {
             return strtoupper($_SERVER['REQUEST_METHOD']);
@@ -63,10 +49,40 @@ class Request
 
     public function getArgs()
     {
-        if ($this->method == "GET") {
-            return $_GET;
+        return $this->getUserData();
+    }
+
+    public function getUserData()
+    {
+        return isset($this->getRequestParams()['user_data']) ? $this->getRequestParams()['user_data'] : $this->getRequestParams();
+    }
+
+    public function getRequestParams()
+    {
+        if (RequestContext::has('request_data')) return RequestContext::get('request_data');
+
+        if ($this->getMethod() == 'GET') {
+            return $_GET ?? [];
+        } else if ($this->getMethod() == "RPC") {
+            // rpc todo
+            return [];
+        } else if ($this->getMethod() == "CLI") {
+            global $argc;
+            global $argv;
+            return $argc > 2 ? array_slice($argv, 2) : [];
         }
-        return $_POST;
+
+        return $_POST ?? [];
+    }
+
+    public function getRequestSysParams()
+    {
+        return isset($this->getRequestParams()['sys_data']) ? $this->getRequestParams()['sys_data'] : [];
+    }
+
+    public function getRequestTraceParams()
+    {
+        return isset($this->getRequestParams()['trace_cs_data']) ? $this->getRequestParams()['trace_cs_data'] : [];
     }
 
     public function __get($name)

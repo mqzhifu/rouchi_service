@@ -29,7 +29,7 @@ class Response
         // rpc stream   pack
 
         // handle
-        // return $this->handle->response($userData, $code = 200, $msg = "success");
+        // return $this->handle->response($userData, $code, $msg);
 
         return new \Jy\JSONResponse([
             'code' => $code,

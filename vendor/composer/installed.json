@@ -1,29 +1,111 @@
 [
     {
+        "name": "php-amqplib/php-amqplib",
+        "version": "v2.8.0",
+        "version_normalized": "2.8.0.0",
+        "source": {
+            "type": "git",
+            "url": "https://github.com/php-amqplib/php-amqplib.git",
+            "reference": "7df8553bd8b347cf6e919dd4a21e75f371547aa0"
+        },
+        "dist": {
+            "type": "zip",
+            "url": "https://api.github.com/repos/php-amqplib/php-amqplib/zipball/7df8553bd8b347cf6e919dd4a21e75f371547aa0",
+            "reference": "7df8553bd8b347cf6e919dd4a21e75f371547aa0",
+            "shasum": "",
+            "mirrors": [
+                {
+                    "url": "https://mirrors.aliyun.com/composer/dists/%package%/%reference%.%type%",
+                    "preferred": true
+                }
+            ]
+        },
+        "require": {
+            "ext-bcmath": "*",
+            "php": ">=5.4.0"
+        },
+        "replace": {
+            "videlalvaro/php-amqplib": "self.version"
+        },
+        "require-dev": {
+            "phpdocumentor/phpdocumentor": "^2.9",
+            "phpunit/phpunit": "^4.8",
+            "scrutinizer/ocular": "^1.1",
+            "squizlabs/php_codesniffer": "^2.5"
+        },
+        "suggest": {
+            "ext-sockets": "Use AMQPSocketConnection"
+        },
+        "time": "2018-10-23T18:48:24+00:00",
+        "type": "library",
+        "extra": {
+            "branch-alias": {
+                "dev-master": "2.8-dev"
+            }
+        },
+        "installation-source": "dist",
+        "autoload": {
+            "psr-4": {
+                "PhpAmqpLib\\": "PhpAmqpLib/"
+            }
+        },
+        "notification-url": "https://packagist.org/downloads/",
+        "license": [
+            "LGPL-2.1-or-later"
+        ],
+        "authors": [
+            {
+                "name": "Alvaro Videla",
+                "role": "Original Maintainer"
+            },
+            {
+                "name": "John Kelly",
+                "email": "johnmkelly86@gmail.com",
+                "role": "Maintainer"
+            },
+            {
+                "name": "Raúl Araya",
+                "email": "nubeiro@gmail.com",
+                "role": "Maintainer"
+            }
+        ],
+        "description": "Formerly videlalvaro/php-amqplib.  This library is a pure PHP implementation of the AMQP protocol. It's been tested against RabbitMQ.",
+        "homepage": "https://github.com/php-amqplib/php-amqplib/",
+        "keywords": [
+            "message",
+            "queue",
+            "rabbitmq"
+        ]
+    },
+    {
         "name": "rouchi/jy_common",
-        "version": "v0.6.0",
-        "version_normalized": "0.6.0.0",
+        "version": "v0.8.1",
+        "version_normalized": "0.8.1.0",
         "source": {
             "type": "git",
             "url": "ssh://git@gitlab.rouchi.com:10022/php_sevice_group/jy_common.git",
-            "reference": "29a28b39d09fd7c4c34a0b91000ef3a03ff879ac"
+            "reference": "2e2a3ffb1b941a5701036b17d26281eb9e9cedc8"
         },
         "dist": {
             "type": "tar",
-            "url": "http://packagist.rouchi.com/dist/rouchi/jy_common/rouchi-jy_common-v0.6.0-d9fc95.tar",
-            "reference": "29a28b39d09fd7c4c34a0b91000ef3a03ff879ac",
-            "shasum": "f7d5fc3b118d31fd684d8657be91f27451d39652"
+            "url": "http://packagist.rouchi.com/dist/rouchi/jy_common/rouchi-jy_common-v0.8.1-686fcc.tar",
+            "reference": "2e2a3ffb1b941a5701036b17d26281eb9e9cedc8",
+            "shasum": "8092115d73efd32c70f034658b1a84fe4fedecb2"
         },
         "require": {
-            "php": "^7.2"
+            "php": "^7.2",
+            "php-amqplib/php-amqplib": "*"
         },
-        "time": "2020-01-15T08:18:58+00:00",
+        "time": "2020-02-20T05:01:38+00:00",
         "type": "component",
         "installation-source": "dist",
         "autoload": {
             "psr-4": {
                 "Jy\\Common\\": "src/"
-            }
+            },
+            "files": [
+                "src/Helpers/CommonHelper.php"
+            ]
         },
         "license": [
             "BSD-3-Clause"
@@ -38,23 +120,24 @@
     },
     {
         "name": "rouchi/jy_config",
-        "version": "v0.0.5",
-        "version_normalized": "0.0.5.0",
+        "version": "v0.2.2",
+        "version_normalized": "0.2.2.0",
         "source": {
             "type": "git",
             "url": "ssh://git@gitlab.rouchi.com:10022/php_sevice_group/jy_config.git",
-            "reference": "3323a5280bcc69d68e7ac17ec3d315ad5fe1826c"
+            "reference": "07ff3f0395813f3b8ecdcf8b9c743f94de8c9ce0"
         },
         "dist": {
             "type": "tar",
-            "url": "http://packagist.rouchi.com/dist/rouchi/jy_config/rouchi-jy_config-v0.0.5-1bc873.tar",
-            "reference": "3323a5280bcc69d68e7ac17ec3d315ad5fe1826c",
-            "shasum": "581923f2f0f92c84a49e1a679021e59b0527cef8"
+            "url": "http://packagist.rouchi.com/dist/rouchi/jy_config/rouchi-jy_config-v0.2.2-47501a.tar",
+            "reference": "07ff3f0395813f3b8ecdcf8b9c743f94de8c9ce0",
+            "shasum": "9c7da6408a9b74bc30c94a1e5368dbd0827cfada"
         },
         "require": {
-            "php": "^7.2"
+            "php": "^7.2",
+            "rouchi/jy_common": "*"
         },
-        "time": "2020-01-08T07:22:36+00:00",
+        "time": "2020-02-19T11:02:07+00:00",
         "type": "component",
         "installation-source": "dist",
         "autoload": {
@@ -75,23 +158,24 @@
     },
     {
         "name": "rouchi/jy_core",
-        "version": "v0.1.8",
-        "version_normalized": "0.1.8.0",
+        "version": "v0.7.1",
+        "version_normalized": "0.7.1.0",
         "source": {
             "type": "git",
             "url": "ssh://git@gitlab.rouchi.com:10022/php_sevice_group/jy_core.git",
-            "reference": "62954fbc907d29e8dd75dcbd386c7811faa1279d"
+            "reference": "730d84fd32f74d96dc5b825202cec6ff4ea122af"
         },
         "dist": {
             "type": "tar",
-            "url": "http://packagist.rouchi.com/dist/rouchi/jy_core/rouchi-jy_core-v0.1.8-79602d.tar",
-            "reference": "62954fbc907d29e8dd75dcbd386c7811faa1279d",
-            "shasum": "6ea3f4b579b221e83c115f96ba3a056e05a87da9"
+            "url": "http://packagist.rouchi.com/dist/rouchi/jy_core/rouchi-jy_core-v0.7.1-06ba79.tar",
+            "reference": "730d84fd32f74d96dc5b825202cec6ff4ea122af",
+            "shasum": "146af56fe721d406d46006e1097f465b1b2e1113"
         },
         "require": {
-            "php": "^7.2"
+            "php": "^7.2",
+            "rouchi/jy_common": "*"
         },
-        "time": "2020-01-20T06:46:08+00:00",
+        "time": "2020-02-20T05:01:29+00:00",
         "type": "component",
         "installation-source": "dist",
         "autoload": {
@@ -112,23 +196,23 @@
     },
     {
         "name": "rouchi/jy_db",
-        "version": "v0.1.8",
-        "version_normalized": "0.1.8.0",
+        "version": "v0.4.2",
+        "version_normalized": "0.4.2.0",
         "source": {
             "type": "git",
             "url": "ssh://git@gitlab.rouchi.com:10022/php_sevice_group/jy_db.git",
-            "reference": "8cebbf9182f82183cba1ec0e36bd7dd17cbac3e4"
+            "reference": "d6c770ade6f845e551b1cbdc221a6cbd8f04365e"
         },
         "dist": {
             "type": "tar",
-            "url": "http://packagist.rouchi.com/dist/rouchi/jy_db/rouchi-jy_db-v0.1.8-2bf0be.tar",
-            "reference": "8cebbf9182f82183cba1ec0e36bd7dd17cbac3e4",
-            "shasum": "c81aa72a55e2aeb1b5bb5019ffac73e0e47395d9"
+            "url": "http://packagist.rouchi.com/dist/rouchi/jy_db/rouchi-jy_db-v0.4.2-9abc4a.tar",
+            "reference": "d6c770ade6f845e551b1cbdc221a6cbd8f04365e",
+            "shasum": "fd946f9c48770b90cce229083c886df6e9a6a1de"
         },
         "require": {
             "php": "^7.2"
         },
-        "time": "2020-01-20T09:24:17+00:00",
+        "time": "2020-02-19T05:58:03+00:00",
         "type": "component",
         "installation-source": "dist",
         "autoload": {
@@ -149,20 +233,20 @@
     },
     {
         "name": "rouchi/jy_log",
-        "version": "v0.0.4",
-        "version_normalized": "0.0.4.0",
+        "version": "v0.3.4",
+        "version_normalized": "0.3.4.0",
         "source": {
             "type": "git",
             "url": "ssh://git@gitlab.rouchi.com:10022/php_sevice_group/jy_log.git",
-            "reference": "008405dbee06267a69bc5e27ca3bf2663decf64e"
+            "reference": "a717eaa7e1d8ad2d5f6eec2ac683f89f9c1f8999"
         },
         "dist": {
             "type": "tar",
-            "url": "http://packagist.rouchi.com/dist/rouchi/jy_log/rouchi-jy_log-v0.0.4-79e5b0.tar",
-            "reference": "008405dbee06267a69bc5e27ca3bf2663decf64e",
-            "shasum": "26405f1e4999139ea9aa69f7ba3ea96e46d42020"
+            "url": "http://packagist.rouchi.com/dist/rouchi/jy_log/rouchi-jy_log-v0.3.4-444a2c.tar",
+            "reference": "a717eaa7e1d8ad2d5f6eec2ac683f89f9c1f8999",
+            "shasum": "e52da3e0932f2f4d72f855297eb802f80d1bcc30"
         },
-        "time": "2020-01-10T10:23:35+00:00",
+        "time": "2020-02-20T05:01:20+00:00",
         "type": "library",
         "installation-source": "dist",
         "autoload": {
