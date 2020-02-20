@@ -3,11 +3,12 @@ namespace Jy\Log\Contract;
 
 abstract class Main  implements MainInterface, PsrLoggerInterface {
 
+    protected $_formatRule = array();
     protected $_delimiter = " | ";//一行内的消息块，分隔符
 
     protected $_msgFormat = "";//自定义日志格式
     //日志格式 ： 请求ID|日期时间|client-IP|进程ID|脚本文件名|类/方法|  XXX自定义信息  (rid|dt||cip|pid|tr )
-    protected $_formatRule = array("rid","dt",'cip','pid','tr');
+//    protected $_formatRule = array("rid","dt",'cip','pid','tr');
     //日志格式中，日期时间的格式
     protected $_msgFormatDatetime = "Y-m-d H:i:s";
 
@@ -19,26 +20,88 @@ abstract class Main  implements MainInterface, PsrLoggerInterface {
     protected $_replaceDelimiterLeft = "{";
     protected $_replaceDelimiterRight = "}";
 
+    protected $_sysBaseInfoKey = array(
+        'request_id',
+        'project_name',
+        'token',
+        'server_addr',
+        'duration',
+        'url',
+        'uid',
+        'oid',
+        'tid',
+        'cip',
+        'method',
+        'upstream_addr',
+        'upstream_domain',
+    );
+    protected $_sysBaseInfo = [];
+    protected $_calledInfoKey = array('file_name', 'function_name', 'line',);
+    protected $_calledInfo = [];
+
+    protected $_selfRuleKey = array(
+        'pid',
+        "level",
+        "request_time",
+        'message',
+        'context',
+        'error_code',
+        'error_label',
+    );
+
+    protected $_isJson = 1;
 
     function __construct(){
-
+        $this->_formatRule = array_merge($this->_calledInfoKey,$this->_sysBaseInfoKey,$this->_selfRuleKey);
     }
     abstract function flush($info);
 
 
-    function formatMsg($message ,array $context = array() ,$jsonEncode = 1){
+    public function setSysBaseInfo(array $info){
+        if(!$info)
+            return false;
+
+        foreach ($info as $k=>$v) {
+            foreach ($this->_sysBaseInfoKey as $k2=>$v2) {
+                if($k = $v2){
+                    $this->_sysBaseInfo[$k] = $v;
+                    break;
+                }
+            }
+        }
+    }
+
+    public function setCalledInfo(array $info){
+        if(!$info)
+            return false;
+
+        foreach ($this->_calledInfoKey as $k2=>$v2) {
+            foreach ($info as $k=>$v) {
+                if($k == $v2){
+                    $this->_calledInfo[$k] = $v;
+                    break;
+                }
+            }
+        }
+    }
+
+    function formatMsg($message ,array $context = array(),$level = ""){
         if(!$message){
             throw new \Exception("message is null.");
         }
+        if(is_object($message)){
+            throw new \Exception("message is object.");
+        }
+        if(is_array($message)){
+            $message = json_encode($message,true);
+        }
+
         $formatInfo = $this->placeholder($message,$context);
-        $formatInfo = $this->replaceFormatMsg($formatInfo);
-//        if($is){
-//            var_dump($this->replaceFormatMsg($formatInfo));exit;
-//        }
-        if($jsonEncode){
+        $formatInfo = $this->replaceFormatMsg($formatInfo,$level);
+        if($this->_isJson){
+//            $formatInfo = explode("|",$formatInfo);
             $formatInfo = json_encode($formatInfo,JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE);
         }
-//        $formatInfo = json_encode( $this->replaceFormatMsg($formatInfo),JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE);
         if($this->_showScreen == 1){
             echo $formatInfo . "\r\n";
         }
@@ -48,35 +111,35 @@ abstract class Main  implements MainInterface, PsrLoggerInterface {
 
     //调试信息
     function emergency($message ,array $context = array()){
-        return $this->formatMsg($message,$context);
+        return $this->formatMsg($message,$context,"emergency");
     }
     //框架级日志
     function alert($message ,array $context = array()){
-        return $this->formatMsg($message,$context);
+        return $this->formatMsg($message,$context,"alert");
     }
     //日常记录
     function critical($message ,array $context = array()){
-        return $this->formatMsg($message,$context);
+        return $this->formatMsg($message,$context,"critical");
     }
     //警告
     function error($message ,array $context = array()){
-        return $this->formatMsg($message,$context,0);
+        return $this->formatMsg($message,$context,"error");
     }
     //致命
     function warning($message ,array $context = array()){
-        return $this->formatMsg($message,$context);
+        return $this->formatMsg($message,$context,"warning");
     }
     //以上均不满足，自定义
     function notice($message ,array $context = array()){
-        return $this->formatMsg($message,$context);
+        return $this->formatMsg($message,$context,"notice");
     }
 
     function info($message ,array $context = array()){
-        return $this->formatMsg($message,$context);
+        return $this->formatMsg($message,$context,"info");
     }
 
     function debug($message ,array $context = array()){
-        return $this->formatMsg($message,$context);
+        return $this->formatMsg($message,$context,"debug");
     }
 
     function log($level,$message ,array $context = array()){
@@ -111,13 +174,16 @@ abstract class Main  implements MainInterface, PsrLoggerInterface {
         $this->_showScreen =  $show;
     }
 
+    function setIsJson($is){
+        $this->_isJson =  $is;
+    }
+
     //===============================以上是对外开放的接口
     function makeRequestId(){
         return uniqid(uniqid(time()));
     }
 
-    function replaceFormatMsg($message){
-        $info = "";
+    function replaceFormatMsg($message,$level){
         if(!$this->_msgFormat){
             $format = $this->_formatRule;
         }else{
@@ -125,23 +191,35 @@ abstract class Main  implements MainInterface, PsrLoggerInterface {
 //            var_dump($format);exit;
         }
 
+        $info = null;
+        foreach ($format as $k=>$v) {
+            $info[$v] = "";
+        }
+
         foreach ($format as $k=>$rule){
             $rule = trim($rule);
             switch ($rule){
-                case 'rid':
-                    $info .= $this->makeRequestId() . $this->_delimiter;
-                    break;
-                case 'dt':
-                    $info .= date($this->_msgFormatDatetime,time()). $this->_delimiter;
+                case 'context':
+                    $info['context'] = $message;
+//                case 'rid':
+//                    $info .= $this->makeRequestId() . $this->_delimiter;
+//                    break;
+                case 'request_time':
+//                    $info .= date($this->_msgFormatDatetime,time()). $this->_delimiter;
+                    $info['request_time'] = date($this->_msgFormatDatetime,time());
                     break;
                 case 'pid':
-                    $info .= getmypid(). $this->_delimiter;
+//                    $info .= getmypid(). $this->_delimiter;
+                    $info['pid'] =  getmypid();
                     break;
-
-                case "cip":
-                    $info .= $this->getClientIp(). $this->_delimiter;
+//
+//                case "cip":
+//                    $info .= $this->getClientIp(). $this->_delimiter;
+//                    break;
+                case "level":
+                    $info['level'] = $level;
                     break;
-                case 'tr':
+//                case 'tr':
 //                    $trace = debug_backtrace();
 //                    $n = 0;
 //                    foreach ($trace as $k =>$v){
@@ -160,18 +238,33 @@ abstract class Main  implements MainInterface, PsrLoggerInterface {
             }
         }
 
-//        exit;
+        if($this->_calledInfo){
+            foreach ($info as $k=>$v) {
+                foreach ($this->_calledInfo as $k2=>$v2) {
+                    if($k2 == $k){
+                        $info[$k2] = $v2;
+                        break;
+                    }
+                }
+            }
+        }
 
-//        var_dump($info);exit;
+        if($this->_sysBaseInfo){
+            foreach ($info as $k=>$v) {
+                foreach ($this->_sysBaseInfo as $k2=>$v2) {
+                    if($k2 == $k){
+                        $info[$k2] = $v2;
+                        break;
+                    }
+                }
+            }
+        }
+
         if(!$info){
             throw new \Exception("message format type value is error.");
         }
 
-        $info .= $this->_delimiter . $message ;
-
-
-
-
+//        $info['content'] .= $message ;
         return $info;
     }
     // 获取客户端IP地址
@@ -194,16 +287,11 @@ abstract class Main  implements MainInterface, PsrLoggerInterface {
     }
 
     function placeholder($message, array $context = array()){
-        if(is_object($message)){
-            throw new \Exception("message type error: is object.");
-        }
         if(!$context){
             return $message;
         }
 
         foreach ($context as $key => $v) {
-//            var_dump($search);exit;
-//            var_dump($search);
             if(is_array($message)){
                 foreach ($message as $k2=>$msg) {
                     $message[$k2] = str_replace($this->_replaceDelimiterLeft . $key . $this->_replaceDelimiterRight,$v,$message[$k2]);
@@ -216,4 +304,5 @@ abstract class Main  implements MainInterface, PsrLoggerInterface {
 
         return $message;
     }
+
 }

@@ -24,7 +24,7 @@ class File extends Main {
     private $_hashType = "day";//year month day
     private $_hashTypeDesc = array("year",'month','day','hour');
     private $_filePrefix = "";//日记文件 前缀名
-    private $_ext = ".txt";//文件扩展名
+    private $_ext = ".log";//文件扩展名
     private $_path = "";//日志文件在于的 基位置
 
     private $_writePath  = "";//类内部使用，如果有 分类文件夹，临时写入
@@ -111,17 +111,17 @@ class File extends Main {
         $this->checkBasePath();
 
         $this->_writePath = $this->_path;
-        if($this->_projectName){
-            $this->_writePath .=  "/".$this->_projectName;
-            $this->checkPathAndMkdir();
-        }
-
-        if($this->_module){
-            $this->_writePath .=  "/".$this->_module;
-            $this->checkPathAndMkdir();
-        }
-
-        $this->_writePath .=  "/".$category;
+//        if($this->_projectName){
+//            $this->_writePath .=  "/".$this->_projectName;
+//            $this->checkPathAndMkdir();
+//        }
+//
+//        if($this->_module){
+//            $this->_writePath .=  "/".$this->_module;
+//            $this->checkPathAndMkdir();
+//        }
+//
+//        $this->_writePath .=  "/".$category;
         $this->checkPathAndMkdir();
     }
     //在基目录下，新建一个文件，记录所有类型的日志，可以看成是一个：总日志文件
@@ -161,7 +161,8 @@ class File extends Main {
         $this->totalRecord($info);
 
         $ext= $this->_ext;
-        if ($this->_hashType){
+//        if ($this->_hashType){
+        if(0){
             if($this->_hashType == 'year'){
                 $filePath = $this->_writePath . "/" . $this->_filePrefix . date("Y").$ext;
             }elseif($this->_hashType == 'month'){
@@ -175,7 +176,8 @@ class File extends Main {
             }
 
         }else{
-            $filePath = $this->_writePath . "/" .$this->_filePrefix .$ext;
+//            $filePath = $this->_writePath . "/" .$this->_filePrefix .$ext;
+            $filePath = $this->_writePath . "/" .$this->_level. $ext;
         }
 
         $info = $info . $this->_wrap;

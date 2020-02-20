@@ -32,9 +32,9 @@ class Valid implements ValidInterface,FilterInterface {
     }
     //验证 数据 格式及类型是否正确
     function match($data,$rules){
-        if(!$data){
-            $this->throwException(500);
-        }
+//        if(!$data){
+//            $this->throwException(500);
+//        }
 
         if(!$rules){
             $this->throwException(501);

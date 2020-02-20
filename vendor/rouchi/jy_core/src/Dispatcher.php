@@ -26,10 +26,17 @@ class Dispatcher
     {
         //..
         $requests = \Jy\App::$app->request;
-
+//        var_dump($requests);exit;
+//        Log::getInstance()->setSysBaseInfo("bbbb");
         // .. hook
         $result = $this->call($requests);
         return $result;
+    }
+
+    function logAdapter($requests){
+        $arr = array(
+            'method'=>$requests->method,
+        );
     }
 
 
@@ -48,7 +55,7 @@ class Dispatcher
             throw new \Exception('controller : '. $namespace .' not exists');
         }
 
-        $controller = new $namespace;
+        $controller = \Jy\App::$app->di->getClassInstance($namespace);
 
         if (!method_exists($controller, $action)) {
             throw new \Exception('action : '. $namespace .':'. $action .' not exists');

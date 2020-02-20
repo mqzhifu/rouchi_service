@@ -21,7 +21,6 @@ class Log
     public static function getInstance()
     {
         if (!defined('ROUCHI_LOG_PATH')) throw new \Exception("log path config const : ROUCHI_LOG_PATH  not exists");
-
         return LG::getInstance()->init('_path', ROUCHI_LOG_PATH);
     }
 
@@ -30,6 +29,11 @@ class Log
         if (is_callable(static::getInstance(), $name)) {
             throw new \Exception("method name :  ". $name. " not exists");
         }
+
+        $arr = debug_backtrace();
+
+        $calledInfo = array("file_name"=>$arr[0]['file'],'function_name'=>$arr[0]['function'],'line'=>$arr[0]['line']);
+        static::getInstance()->setCalledInfo($calledInfo);
 
         return static::getInstance()->$name(...$args);
     }
