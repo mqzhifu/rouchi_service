@@ -157,7 +157,9 @@ Valid::match($data,$rule);
 rabbitMq 队列
 ============
 注意：依赖 "php-amqplib/php-amqplib": composer update  
-具体代码逻辑 可参考TEST目录下的client.php server.php
+具体代码逻辑 可参考TEST目录下的client.php server.php  
+最好在本地安装个rabbitmq，自带可视化工具，方便测试  
+
 
 角色描述
 --------------
@@ -168,7 +170,7 @@ rabbitmq-server:接收 product 发送的消息 , push 给consumer
 
 生产者-基础流程
 --------------
-1. 先定义一个生产类(如：ProductSms)，只需要继承一个基类(MessageQueue)即可
+1. 先定义一个生产类(如：ProductSms)，只需要继承一个基类(MessageQueue)即可（类名随意）
 ```java
 use Jy\Common\MsgQueue\MsgQueue\MessageQueue;
 class ProductSms extens MessageQueue{
@@ -176,6 +178,8 @@ class ProductSms extens MessageQueue{
 }
 ```
 2. 再定义一个通信协议（get/set）类
+>注：此类名由之前定义的类名+Bean结尾，如：上面定义的类名为ProductSms ,那就是ProductSms+Bean  
+>切记：必须按照此规则，否则程序报错。
 ```java
 class ProductSmsBean{
     ..doing something..
@@ -279,7 +283,6 @@ class ConsumerSms extends MessageQueue{
 
     function handleSmsBean($data){
         echo "im sms bean handle \n ";
-        return array("return"=>"ack");
     }
 
     function handleUserBean($data){
@@ -293,11 +296,19 @@ class ConsumerSms extends MessageQueue{
 3. 将N个bean 绑定到基类上，并设置回调处理函数  ( setListenerBean 方法 )
 4. 启动订阅
 
+
+
+
+
 #编程模式
 >rabbitmq 是基于erlang模式，全并发模式(channel)。也就是全异步模式(基类里我规避了这种方式，但牺牲部分性能)  
 >大部分你的操作，比如：send 实际上并不是以同步方式拿到mq返回的值。  
 >很多业务都是基于callback function 方式，所以使用时请注意下.  
 
+
+#测试用例
+>test目录下有 client.php server.php 简易测试用例，再参考该文档即可。
+>最好在本地安装个rabbitmq，自带可视化工具，方便测试  
 
 #消息可靠性
 >业务人员在投递/消费时，最好借助三方软件，如：redis|mysql ，持久化该消息状态。避免丢消息或重复消费，也方便跟踪  
@@ -330,4 +341,18 @@ class ConsumerSms extends MessageQueue{
 #集群
 >目前暂时没有集群，到达量后，会开启镜像模式集群，防止单点故障  
 
+#分布式
+>暂不支持，到达量后，可配合集群一起使用  
 
+#延迟队列插件  
+>由erlang编写，实际流程为 用户发送一条延迟消息 插件捕获，存于MnesiaDB，到时间后(erlang+timer)再投递到队列中  
+>rabbitmq server 意外中止，或者手动停止，消息依然存在，且重启后 继续有效。  
+>如果手动禁止该插件，数据会丢失 rabbitmq-plugins disable rabbitmq_delayed_message_exchange  
+>暂不支持  <撤消>功能，业务人员可自行实现，每条send后，SERVER会返回msgId,业务人员可自行判定处理  
+
+#编写consuer注意事项
+>一定要做好 异常 捕获，否则会导致进程意外退出，消息积压。  
+>进程以守护方式启动，很容易产生内存泄漏或未知异常，建议参考apache的多进程+多线程的方式，当处理了N条消息后，自动重启.  
+
+#异常错误码
+>参照 rabbitmqBean 基类里的 描述文件  

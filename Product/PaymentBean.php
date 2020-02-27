@@ -1,8 +1,11 @@
 <?php
-namespace Jy\Common\MsgQueue\Test\Product;
+namespace Rouchi\Product;
 use Jy\Common\MsgQueue\MsgQueue\MessageQueue;
 
-class ProductOrder extends MessageQueue {
+class PaymentBean extends MessageQueue{
+    public $_id = 1;
+    public $_price = "";
+
     function __construct(){
         parent::__construct();
         $this->setMode(1);
@@ -10,6 +13,6 @@ class ProductOrder extends MessageQueue {
     }
 
     function ackHandle($data){
-        echo "order receive rabbitmq server callback ack info.";
+        echo "PaymentBean receive rabbitmq server callback ack info. end<br/>";
     }
 }

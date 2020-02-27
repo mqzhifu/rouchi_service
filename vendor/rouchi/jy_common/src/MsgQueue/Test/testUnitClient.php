@@ -1,4 +1,9 @@
 <?php
+namespace Jy\Common\MsgQueue\Test;
+use Jy\Common\MsgQueue\MsgQueue\RabbitmqBean;
+
+
+//include_once "./../../../vendor/autoload.php";
 //注意 SERVER返回ACK确认 回调函数
 //$lib->regAckCallback($clientAck);
 
@@ -16,6 +21,22 @@
 
 //$lib->wait();
 
+//testUnit(6);
+
+
+//clearAll();
+testUnit(8);
+
+
+//$rabbit = new RabbitmqBean();
+//$rabbit->setMode(1);
+//$arg = array("delivery_mode"=>2);
+//$rabbit->publishToBase("aaaaaa","test.other","sdff","",$arg);
+//$rabbit->waitReturnListener();
+
+//sleep(1);
+
+//exit;
 
 //echo "end";
 
@@ -296,7 +317,7 @@ function testCapabilityTxMode(Lib $lib){
 }
 
 function clearAll(){
-    $lib = new \Jy\Common\MsgQueue\MsgQueue\RabbitmqClientBase();
+    $lib = \Jy\Common\MsgQueue\Facades\MsgQueue::getInstance();
     $TestConfig = new \Jy\Common\MsgQueue\Test\Tools($lib);
     $TestConfig->clearAll($lib);
     exit;
@@ -304,17 +325,17 @@ function clearAll(){
 
 
 function testUnit($pid,$isDel = 1){
-    $lib = new \Jy\Common\MsgQueue\MsgQueue\RabbitmqClientBase();
+    $lib = \Jy\Common\MsgQueue\Facades\MsgQueue::getInstance();
     $TestConfig = new \Jy\Common\MsgQueue\Test\Tools($lib);
     $TestConfig->setProjectId($pid);
 
     if($isDel){
         $TestConfig->clearByProject($pid);
-        $lib->wait();
+        $lib->waitReturnListener();
     }
 
     $TestConfig->initProjectExchangeQueue($pid);
-    $lib->wait();
+    $lib->waitReturnListener();
     exit;
 }
 

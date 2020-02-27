@@ -16,7 +16,6 @@ if (!function_exists('getConfFile')) {
         $sApproot = defined('ROUCHI_ROOT_PATH') ? ROUCHI_ROOT_PATH . '/../' : dirname(__FILE__) . '/../../../../../../';
 
         $sFileAddress = $sApproot . DIRECTORY_SEPARATOR . $sConfDirName . DIRECTORY_SEPARATOR . $sAppName . DIRECTORY_SEPARATOR . $sFile;
-
         if (is_file($sFileAddress)) {
             return $sFileAddress;
         } else {

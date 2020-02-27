@@ -10,15 +10,61 @@ use PhpAmqpLib\Message\AMQPMessage;
 class RabbitmqBase implements AmqpBaseInterface {
     private $_consumerStopWait = 0;
     public $_retryTime  = array(1,5,10);
-    private $_debug = 1;
+    private $_debug = 0;
     private $_conn = null;
     private $_channel = null;
-    private $_conf =['host' => '127.0.0.1', 'port' => 5672, 'user' => 'root', 'pwd' => 'root', 'vhost' => '/',];
+    private $_confKey = array('host','port','user','pwd','vhost');
+    protected $_conf = null;
+//    private $_conf =['host' => '127.0.0.1', 'port' => 5672, 'user' => 'root', 'pwd' => 'root', 'vhost' => '/',];
 //    private $_conf =['host' => '172.19.113.249', 'port' => 5672, 'user' => 'root', 'pwd' => 'sfat324#43523dak&', 'vhost' => '/',];
 
-    function __construct(){
+
+    private $_codeErrMessage = array(
+        400=>'code is null',
+        401=>'code not is key',
+        500=>"msgBody is null",
+        501=>"msgBody is bool",
+        502=>"<message_id> key value: must null",
+        503=>"<type> key value: must null",
+
+        504=>"mode value is error.",
+        505=>"confirm mode or  tx mode just have use one,is mutex -1",
+        506=>"N-Ack {0}",
+        507=>"return_listener {0}",
+        508=>"consumerName is null",
+        509=>"conn failed",
+        510=>" queue name is null",
+        511=>"exchange name is null",
+        512=>"<timestamp> key value: must null",
+        513=>"user diy bean not match rabbitmq server back header.",
+        514=>"beanName is not object",
+        515=>"config get :rabbitmq key  is null",
+        516=>"config key err.",
+        517=>" delayTime must int.",
+        518=>" delayTime must > 1000",
+        519=>" delayTime must <= 7 days.",
+        520=>"rabbitmq return ack not include header",
+
+        600=>"NOT_FOUND - no exchange",
+        601=>"PRECONDITION_FAILED - cannot switch from confirm to tx mode",
+        602=>"AMQP-rabbit doesn't define data of type []",
+        603=>"NOT_FOUND - no queue",
+        604=>"PRECONDITION_FAILED - inequivalent arg 'x-dead-letter-exchange' for queue",
+        605=>":NO_ROUTE",
+    );
+
+
+    function __construct($conf){
+        $this->_conf = $conf;
+    }
+
+    function initBase(){
         $this->initConn();
         $this->initChannel();
+    }
+
+    function setConf($conf){
+        $this->_conf = $conf;
     }
 
     function setDebug($flag){
@@ -40,12 +86,41 @@ class RabbitmqBase implements AmqpBaseInterface {
             $conf['host'], $conf['port'], $conf['user'], $conf['pwd'], $conf['vhost']
         );
 
+//        $insist = false,
+//        $login_method = 'AMQPLAIN',
+//        $login_response = null,
+//        $locale = 'en_US',
+//        $connection_timeout = 3.0,
+//        $read_write_timeout = 3.0,
+//        $context = null,
+//        $keepalive = false,
+//        $heartbeat = 0
+
         $this->out("connect rabbit config;".json_encode($conf));
         if(!$conn->isConnected()){
-            $this->throwException("conn failed");
+            $this->throwException(509);
         }
         $this->_conn = $conn;
         return $this->_conn;
+    }
+
+    function checkConfigFormat($config = null ){
+        if(!$config){
+            $config = $this->_conf;
+        }
+
+        foreach ( $this->_confKey as $k=>$v) {
+            $f = 0;
+            foreach ($config as $k2=>$v2) {
+                if($v == $k2 && $v2){
+                    $f = 1;
+                    break;
+                }
+            }
+            if(!$f){
+                $this->throwException(516);
+            }
+        }
     }
 
     function resetConn(){
@@ -69,8 +144,24 @@ class RabbitmqBase implements AmqpBaseInterface {
         return $this->_channel;
     }
 
-    function throwException($msg){
-        throw new \Exception($msg);
+    function throwException($code,$replace = ""){
+        if(!$code){
+            throw new \Exception($this->_codeErrMessage[400]);
+        }
+
+        if(!isset($this->_codeErrMessage[$code]) || !$this->_codeErrMessage[$code]){
+            throw new \Exception($this->_codeErrMessage[401]);
+        }
+        if(!$replace){
+            throw new \Exception($this->_codeErrMessage[$code]);
+        }else{
+            $message = $this->_codeErrMessage[$code];
+            foreach ($replace as $key => $v) {
+                $message = str_replace("{" . $key ."}",$v,$message);
+            }
+
+            throw new \Exception($message);
+        }
     }
 
     function getRetryMax(){
@@ -112,10 +203,10 @@ class RabbitmqBase implements AmqpBaseInterface {
     //队列相关===============================
     function setQueue($queueName,$arguments = null,$durable = true,$autoDelete = false){
         if(!$queueName){
-            $this->throwException(" queue name is null");
+            $this->throwException(510);
         }
 
-        $this->out("setQueue $queueName , arguments:".json_encode($arguments));
+        $this->out("setQueue $queueName , arguments:".json_encode($arguments) . " durable : $durable , autoDelete : $autoDelete");
 //        try{
 //            $this->getChannel()->queue_declare($queueName,true,false,false,false,false);
 //            $this->out(" ok exist");
@@ -128,6 +219,7 @@ class RabbitmqBase implements AmqpBaseInterface {
             $table = new AMQPTable($arguments);
         }
         $this->getChannel()->queue_declare($queueName,false,$durable,false,$autoDelete,true,$table);
+        $this->baseWait();
 //        }
     }
 
@@ -144,9 +236,13 @@ class RabbitmqBase implements AmqpBaseInterface {
         }
     }
 
-    function queueExist($queue){
+
+    function queueExist($queueName,$arguments= null,$durable= null,$autoDel= null){
+        if($arguments){
+            $arguments = new AMQPTable($arguments);
+        }
         try{
-            $this->getChannel()->queue_declare($queue,true);
+            $this->getChannel()->queue_declare($queueName,true,$durable,false,$autoDel,false,$arguments);
             return 1;
         }catch (\Exception $e){
             $this->resetConn();
@@ -162,7 +258,7 @@ class RabbitmqBase implements AmqpBaseInterface {
     //exchange  相关start ==============================================
     function setExchange($exchangeName,$type,$arguments = null){
         if(!$exchangeName){
-            $this->throwException(" exchange name is null");
+            $this->throwException(511);
         }
         $this->out("setExchange $exchangeName , type:$type , arguments:".json_encode($arguments));
 //        try{
@@ -196,7 +292,14 @@ class RabbitmqBase implements AmqpBaseInterface {
 
 
     function publish($msgBody ,$exchangeName,$routingKey = '',$header = null,$arguments = null){
-        $this->out("publish  ex:$exchangeName , route key:".$routingKey);
+        $info = "publish  ex:$exchangeName , route key:".$routingKey ;
+        if($header){
+            $info .= " . header:".json_encode($header);
+        }
+        if($arguments){
+            $info .= " . arguments:".json_encode($arguments);
+        }
+        $this->out($info);
         $finalArguments = [];
         if($header){
             $header =  new AMQPTable($header);
@@ -207,7 +310,12 @@ class RabbitmqBase implements AmqpBaseInterface {
             $finalArguments = array_merge($finalArguments,$arguments);
         }
         $AMQPMessage = new AMQPMessage($msgBody,$finalArguments);
-        $this->getChannel()->basic_publish($AMQPMessage,$exchangeName,$routingKey,false);
+        $this->getChannel()->basic_publish($AMQPMessage,$exchangeName,$routingKey,true);
+        $this->baseWait();
+    }
+
+    function baseWait(){
+        $this->getChannel()->wait_for_pending_acks_returns();
     }
 
     function retry($attr,$body,$exchange,$msg){
@@ -231,18 +339,18 @@ class RabbitmqBase implements AmqpBaseInterface {
 //        try{
 //            $this->txSelect();
 
-            $baseRetryCnt = $this->getRetryTime();
-            $this->out("baseRetryCnt:".json_encode($baseRetryCnt));
-            $arguments = $attr;
-            $header = $attr['header'];
-            unset($arguments['header']);
-            $header['x-delay'] = $baseRetryCnt[$retryCount] * 1000;
-            $header['x-retry-count'] = $retryCount+1;
-            $this->out("header:".json_encode($header));
+        $baseRetryCnt = $this->getRetryTime();
+        $this->out("baseRetryCnt:".json_encode($baseRetryCnt));
+        $arguments = $attr;
+        $header = $attr['header'];
+        unset($arguments['header']);
+        $header['x-delay'] = $baseRetryCnt[$retryCount] * 1000;
+        $header['x-retry-count'] = $retryCount+1;
+        $this->out("header:".json_encode($header));
 
-            $msg->delivery_info['channel']->basic_ack($msg->delivery_info['delivery_tag']);
-            $this->out("ack:".$msg->delivery_info['delivery_tag']);
-            $this->publish($body,$exchange,"",$header,$arguments);
+        $msg->delivery_info['channel']->basic_ack($msg->delivery_info['delivery_tag']);
+        $this->out("ack:".$msg->delivery_info['delivery_tag']);
+        $this->publish($body,$exchange,"",$header,$arguments);
 //            $this->txCommit();
 //        }catch (\Exception $e){
 //            $this->txRollback();
@@ -256,17 +364,23 @@ class RabbitmqBase implements AmqpBaseInterface {
         $attr = self::getReceiveAttr($msg);
         $recall = array("AMQPMessage" => $msg, 'body' => $body, 'attr' => $attr);
         if($noAck){
+            $this->out(" no ack ");
             call_user_func($userCallback,$recall);
         }else{
             try{
+                $this->out(" exec user callback function");
                 $rs = call_user_func($userCallback,$recall);
                 if(!$rs || !isset($rs['return']) || !$rs['return'] || ! in_array($rs['return'],array_flip($this->getReturnRabbitmqAckTypeDesc()) ) ){
                     $msg->delivery_info['channel']->basic_ack($msg->delivery_info['delivery_tag'] );
                     return true;
                 }
-                $rs=['return'=>'reject'];
+//                $rs=['return'=>'reject'];
 
                 $this->out("user trigger retry:".$rs['return']);
+                if($rs['return'] == 'reject' && isset($rs['requeue']) && $rs['requeue'] ){
+                    $msg->delivery_info['channel']->basic_reject($msg->delivery_info['delivery_tag'], false);
+                    return true;
+                }
                 $this->retry($attr,$body,$exchange,$msg);
 //                $callbackRabbitmqServerAckFunc = $rs['return'];
 //                $this->$callbackRabbitmqServerAckFunc($recall['AMQPMessage']);
@@ -323,10 +437,12 @@ class RabbitmqBase implements AmqpBaseInterface {
             $rs = $self->subscribeCallback($msg,$userCallback,$exchangeName,$noAck);
             return true;
         };
+
         $this->getChannel()->basic_consume($queueName,$consumerTag,false,$noAck,false,false,$baseCallback);
     }
 
     function startListenerWait(){
+        $this->out(" start Listener Wait... ");
         while (1){
             if($this->_consumerStopWait){
                 $this->out(" cancel consumer.");

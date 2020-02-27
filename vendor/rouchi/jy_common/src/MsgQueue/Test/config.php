@@ -163,8 +163,8 @@ $GLOBALS['mqConfig'] = array(
                         'name'=>"test.header.delay.sms",
                         'consumerType'=>'sms',
                         "bind_header_map"=>array(
-                            "Jy\Common\MsgQueue\Test\Product\ProductSms"=>"Jy\Common\MsgQueue\Test\Product\ProductSms",
-                            "Jy\Common\MsgQueue\Test\Product\ProductUser"=>"Jy\Common\MsgQueue\Test\Product\ProductUser",
+                            "Jy\Common\MsgQueue\Test\Product\ProductSmsBean"=>"Jy\Common\MsgQueue\Test\Product\ProductSmsBean",
+                            "Jy\Common\MsgQueue\Test\Product\ProductUserBean"=>"Jy\Common\MsgQueue\Test\Product\ProductUserBean",
                             'x-match'=>'any'),
                         'bind_routing_key'=>"",
                         'arguments'=>array(
@@ -178,8 +178,8 @@ $GLOBALS['mqConfig'] = array(
                         'name'=>"test.header.delay.order",
                         'consumerType'=>'email',
                         "bind_header_map"=>array(
-                            "Jy\Common\MsgQueue\Test\Product\ProductOrder"=>"Jy\Common\MsgQueue\Test\Product\ProductOrder",
-                            "Jy\Common\MsgQueue\Test\Product\ProductUser"=>"Jy\Common\MsgQueue\Test\Product\ProductUser",
+                            "Jy\Common\MsgQueue\Test\Product\ProductOrderBean"=>"Jy\Common\MsgQueue\Test\Product\ProductOrderBean",
+                            "Jy\Common\MsgQueue\Test\Product\ProductUserBean"=>"Jy\Common\MsgQueue\Test\Product\ProductUserBean",
                             'x-match'=>'any'),
                         'bind_routing_key'=>"",
                         'arguments'=>array(
@@ -192,7 +192,7 @@ $GLOBALS['mqConfig'] = array(
                     array(
                         'name'=>"test.header.delay.user",
                         'consumerType'=>'email',
-                        "bind_header_map"=>array("Jy\Common\MsgQueue\Test\Product\ProductUser"=>"Jy\Common\MsgQueue\Test\Product\ProductUser",'x-match'=>'any'),
+                        "bind_header_map"=>array("Jy\Common\MsgQueue\Test\Product\ProductUserBean"=>"Jy\Common\MsgQueue\Test\Product\ProductUserBean",'x-match'=>'any'),
                         'bind_routing_key'=>"",
                         'arguments'=>array(
                             'x-expires'=>0,//整个队列失效时间
@@ -266,7 +266,7 @@ $GLOBALS['mqConfig'] = array(
 
 
         ),
-    ),
+),
     5=>array("appId"=>5,'name'=>'测试扇形exchange',
         "exchange"=>array(
             array("name"=>'test.fanout','type'=>'fanout','alternate-exchange'=>'test.fanout.alternate_ex',
@@ -407,18 +407,19 @@ $GLOBALS['mqConfig'] = array(
 
     7=>array("appId"=>7,'name'=>'测试<headers>多对多',
         "exchange"=>array(
-            array("name"=>'test.header-many','type'=>'headers','alternate-exchange'=>'test.header-many.alternate_ex',
+            array("name"=>'test.header-many','type'=>'x-delayed-message', 'x-delayed-type'=>'headers',
+//                'alternate-exchange'=>'test.header-many.alternate_ex',
                 'queue'=>array(
                     array(
                         'name'=>"test.header-many.sms",
-                        "bind_header_map"=>array("sms"=>"sms",'x-match'=>'all'),
+                        "bind_header_map"=>array("sms"=>"sms",'x-match'=>'any'),
                         'arguments'=>array(
                             'x-dead-letter-exchange'=>'test.header-many.dead_ex'
                         ),
                     ),
                     array(
                         'name'=>"test.header-many.email",
-                        "bind_header_map"=>array("email"=>"email",'x-match'=>'all'),
+                        "bind_header_map"=>array("email"=>"email",'x-match'=>'any'),
                         'arguments'=>array(
                             'x-dead-letter-exchange'=>'test.header-many.dead_ex'
                         ),
@@ -430,37 +431,119 @@ $GLOBALS['mqConfig'] = array(
                             'x-dead-letter-exchange'=>'test.header-many.dead_ex'
                         ),
                     ),
-                    array(
-                        'name'=>"test.header-many.blank",
-                        "bind_header_map"=>null,
-                        'arguments'=>array(
-                            'x-dead-letter-exchange'=>'test.header-many.dead_ex'
-                        ),
-                    ),
+//                    array(
+//                        'name'=>"test.header-many.blank",
+//                        "bind_header_map"=>null,
+//                        'arguments'=>array(
+//                            'x-dead-letter-exchange'=>'test.header-many.dead_ex'
+//                        ),
+//                    ),
                 ),
             ),
 
-            array("name"=>'test.header-many.dead_ex','type'=>'fanout',
+            array("name"=>'test.header-many.dead_ex','type'=>'headers',
                 'queue'=>array(
                     array(
-                        'name'=>"test.header-many.dead_ex.queue",
-                        'consumerType'=>'',
-                        "bind_header_map"=>null,
-                        'bind_routing_key'=>"",
-                        'arguments'=>array(
-                            'x-expires'=>0,//整个队列失效时间
-                            'x-message-ttl'=>0,//所有进入该队列消息的，TTL时效
-                            'x-max-length'=>100000,
-                        ),
+                        'name'=>"test.header-many.dead_ex.queue.sms",
+                        "bind_header_map"=>array("sms"=>"sms",'x-match'=>'any'),
+                    ),
+                    array(
+                        'name'=>"test.header-many.dead_ex.queue.email",
+                        "bind_header_map"=>array("email"=>"email",'x-match'=>'any'),
                     ),
                 ),
             ),
 
             //alternate-exchange
-            array("name"=>'test.header-many.alternate_ex','type'=>'direct',
+//            array("name"=>'test.header-many.alternate_ex','type'=>'direct',
+//                'queue'=>array(
+//                    array(
+//                        'name'=>"test.header-many.alternate_ex.queue",
+//                        'consumerType'=>'',
+//                        "bind_header_map"=>null,
+//                        'bind_routing_key'=>"",
+//                        'arguments'=>array(
+//                            'x-expires'=>0,//整个队列失效时间
+//                            'x-message-ttl'=>0,//所有进入该队列消息的，TTL时效
+//                            'x-max-length'=>100000,
+//                        ),
+//                    ),
+//                ),
+//            ),
+        ),
+    ),
+
+
+
+    8=>array("appId"=>3,'name'=>'测试<延迟><headers>类型exchange_2',
+        "exchange"=>array(
+            array("name"=>'many.header.delay','type'=>'x-delayed-message', 'x-delayed-type'=>'headers',
                 'queue'=>array(
                     array(
-                        'name'=>"test.header-many.alternate_ex.queue",
+                        'name'=>"many.header.delay.sms",
+                        "bind_header_map"=>array(
+                            "Rouchi\Product\SmsBean"=>"Rouchi\Product\SmsBean",
+                            "Rouchi\Product\UserBean"=>"Rouchi\Product\UserBean",
+                            'x-match'=>'any'),
+                        'bind_routing_key'=>"",
+                        'arguments'=>array(
+                            'x-expires'=>0,//整个队列失效时间
+                            'x-message-ttl'=>0,//所有进入该队列消息的，TTL时效
+                            'x-max-length'=>100000,
+//                            'x-dead-letter-exchange'=>'many.header.delay.dead_ex',
+                        ),
+                    ),
+                    array(
+                        'name'=>"many.header.delay.order",
+                        'consumerType'=>'email',
+                        "bind_header_map"=>array(
+                            "Rouchi\Product\OrderBean"=>"Rouchi\Product\OrderBean",
+                            "Rouchi\Product\UserBean"=>"Rouchi\Product\UserBean",
+                            'x-match'=>'any'),
+                        'bind_routing_key'=>"",
+                        'arguments'=>array(
+                            'x-expires'=>0,//整个队列失效时间
+                            'x-message-ttl'=>0,//所有进入该队列消息的，TTL时效
+                            'x-max-length'=>100000,
+//                            'x-dead-letter-exchange'=>'many.header.delay.dead_ex',
+                        ),
+                    ),
+                    array(
+                        'name'=>"many.header.delay.user",
+                        "bind_header_map"=>array(
+                            "Rouchi\Product\UserBean"=>"Rouchi\Product\UserBean",
+                            'x-match'=>'any'
+                        ),
+                        'bind_routing_key'=>"",
+                        'arguments'=>array(
+                            'x-expires'=>0,//整个队列失效时间
+                            'x-message-ttl'=>0,//所有进入该队列消息的，TTL时效
+                            'x-max-length'=>100000,
+//                            'x-dead-letter-exchange'=>'many.header.delay.dead_ex',
+                        ),
+                    ),
+
+                    array(
+                        'name'=>"many.header.delay.payment",
+                        "bind_header_map"=>array(
+                            "Rouchi\Product\PaymentBean"=>"Rouchi\Product\PaymentBean",
+                            'x-match'=>'any'
+                        ),
+                        'bind_routing_key'=>"",
+                        'arguments'=>array(
+                            'x-expires'=>0,//整个队列失效时间
+                            'x-message-ttl'=>0,//所有进入该队列消息的，TTL时效
+                            'x-max-length'=>100000,
+//                            'x-dead-letter-exchange'=>'many.header.delay.dead_ex',
+                        ),
+                    ),
+                ),
+            ),
+
+            array("name"=>'many.header.delay.dead_ex','type'=>'fanout',
+                'queue'=>array(
+                    array(
+                        'name'=>"many.header.delay.dead_ex.queue",
                         'consumerType'=>'',
                         "bind_header_map"=>null,
                         'bind_routing_key'=>"",

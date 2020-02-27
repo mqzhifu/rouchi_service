@@ -12,11 +12,12 @@ use Jy\Request;
 use Jy\Common\Valid\Facades\Valid;
 
 use Rouchi\Product\OrderBean;
+use Rouchi\Product\PaymentBean;
 use Rouchi\Product\SmsBean;
 use Rouchi\Product\UserBean;
 
 
-include_once 'D:\www\rouchi\rouchi_service\vendor\rouchi\jy_common\src\MsgQueue\Test\testUnitClient.php';
+//include_once 'D:\www\rouchi\rouchi_service\vendor\rouchi\jy_common\src\MsgQueue\Test\testUnitClient.php';
 
 class Index extends Controller
 {
@@ -28,8 +29,8 @@ class Index extends Controller
     public function index(Valid $valid , Request $request)
     {
 
-        clearAll();
 
+        $PaymentBean = new PaymentBean();
         $OrderBean = new OrderBean();
         $UserBean = new UserBean();
         $SmsBean = new SmsBean();
@@ -38,12 +39,25 @@ class Index extends Controller
         $OrderBean->_id = 1;
         $OrderBean->_channel = 'baidu';
         $OrderBean->send();
+        $OrderBean->sendDelay(5000);
 
         $UserBean->_id = 2;
         $UserBean->send();
 
         $SmsBean->_msg = "aaa";
         $SmsBean->send();
+
+
+        $PaymentBean->_price = '100';
+        $PaymentBean->send();
+
+
+
+
+
+
+
+
 
 
 

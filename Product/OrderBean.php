@@ -16,6 +16,6 @@ class OrderBean extends MessageQueue{
     }
 
     function ackHandle($data){
-        echo "order receive rabbitmq server callback ack info.";
+        echo "OrderBean receive rabbitmq server callback ack info. end<br/>";
     }
 }

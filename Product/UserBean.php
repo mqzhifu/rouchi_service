@@ -23,9 +23,4 @@ class UserBean extends MessageQueue{
         }
     }
 
-    function publishDelay($bean,$time){
-        $rabbitHeader = array('x-delay'=>$time);//1秒
-        $this->send( $bean ,null,$rabbitHeader);
-    }
-
 }

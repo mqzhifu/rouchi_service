@@ -2,23 +2,15 @@
 namespace Jy\Common\MsgQueue\MsgQueue;
 use Jy\Common\MsgQueue\Facades\MsgQueue;
 
-abstract class MessageQueue{
+abstract class MessageQueueConsumer{
     private $_providerName  = null;
+    private $_provider = null;
     private $_flag = "";
     function __construct()
     {
-        //子类名，即是 协议，即是 标识
         $this->_flag = get_called_class();
+        $this->_provider = new RabbitmqBean();
         MsgQueue::getInstance()->_outInit($this->_flag);
-    }
-    //发送一条普通消息给mq
-    function send(){
-        return MsgQueue::getInstance()->_outInit($this->_flag)->send($this);
-    }
-    //发送一条延迟消息
-    function sendDelay(int $msTime ){
-        $arr = array('x-delay'=>$msTime);
-        return MsgQueue::getInstance()->_outInit($this->_flag)->send($this,$arr);
     }
     //一个consumer订阅一个队列
     function subscribe($queueName, $consumerTag = "",$noAck = false){
@@ -36,17 +28,8 @@ abstract class MessageQueue{
     function setListenerBean($beanName,$callback){
         return MsgQueue::getInstance()->_outInit($this->_flag)->setListenerBean($beanName,$callback);
     }
-    //设定当前脚本模式  1普通 2确认模式 3事务模式  注：2 跟 3 互斥
-    function setMode(int $num){
-        return MsgQueue::getInstance()->setMode($num);
-    }
-
     function setDebug($flag){
-        return MsgQueue::getInstance()->setDebug($flag);
-    }
-    //注册用户ACK回调
-    function regUserCallbackAck($callback){
-        return MsgQueue::getInstance()->_outInit($this->_flag)->regUserCallbackAck($callback);
+        return $this->setDebug($flag);
     }
     //开启一个事务
     function  transactionStart(){
