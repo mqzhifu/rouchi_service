@@ -4,6 +4,7 @@ namespace Jy\Common\Contract\Context;
 
 
 use Jy\Common\Helpers\ArrayHelper;
+use Jy\Common\Helpers\MachineHelper;
 
 /**
  * @file RequestContextAbstract.php
@@ -108,7 +109,7 @@ abstract class RequestContextAbstract implements RequestContextInterface
     {
         $pid = getmypid();
 
-        $mac = 'mac';
+        $mac = MachineHelper::getLocalMacAddr();
 
         if (static::isInSwooleCoroutine()) {
             $uniqid = \Swoole\Coroutine::getCid();

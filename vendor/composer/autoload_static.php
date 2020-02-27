@@ -21,6 +21,7 @@ class ComposerStaticInit1e055453c6afef1a0906cc307e5a028f
         ),
         'J' => 
         array (
+            'Jy\\Redis\\' => 9,
             'Jy\\Log\\' => 7,
             'Jy\\Db\\' => 6,
             'Jy\\Config\\' => 10,
@@ -37,6 +38,10 @@ class ComposerStaticInit1e055453c6afef1a0906cc307e5a028f
         'PhpAmqpLib\\' => 
         array (
             0 => __DIR__ . '/..' . '/php-amqplib/php-amqplib/PhpAmqpLib',
+        ),
+        'Jy\\Redis\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/rouchi/jy_redis/src',
         ),
         'Jy\\Log\\' => 
         array (

@@ -21,6 +21,7 @@ class Log
     public static function getInstance()
     {
         if (!defined('ROUCHI_LOG_PATH')) throw new \Exception("log path config const : ROUCHI_LOG_PATH  not exists");
+        LG::getInstance()->init("_buffMem",1);
         return LG::getInstance()->init('_path', ROUCHI_LOG_PATH);
     }
 
@@ -34,6 +35,12 @@ class Log
 
         $calledInfo = array("file_name"=>$arr[0]['file'],'function_name'=>$arr[0]['function'],'line'=>$arr[0]['line']);
         static::getInstance()->setCalledInfo($calledInfo);
+
+
+        $sysInfo = \Jy\Common\RequestContext\RequestContext::get('sys_data');
+        if($sysInfo){
+            static::getInstance()->setSysBaseInfo($sysInfo);
+        }
 
         return static::getInstance()->$name(...$args);
     }

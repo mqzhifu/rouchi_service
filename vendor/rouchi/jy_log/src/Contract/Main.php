@@ -34,6 +34,8 @@ abstract class Main  implements MainInterface, PsrLoggerInterface {
         'method',
         'upstream_addr',
         'upstream_domain',
+        'error_code',
+        'error_label',
     );
     protected $_sysBaseInfo = [];
     protected $_calledInfoKey = array('file_name', 'function_name', 'line',);
@@ -45,8 +47,6 @@ abstract class Main  implements MainInterface, PsrLoggerInterface {
         "request_time",
         'message',
         'context',
-        'error_code',
-        'error_label',
     );
 
     protected $_isJson = 1;
@@ -63,7 +63,7 @@ abstract class Main  implements MainInterface, PsrLoggerInterface {
 
         foreach ($info as $k=>$v) {
             foreach ($this->_sysBaseInfoKey as $k2=>$v2) {
-                if($k = $v2){
+                if($k == $v2){
                     $this->_sysBaseInfo[$k] = $v;
                     break;
                 }
@@ -264,7 +264,7 @@ abstract class Main  implements MainInterface, PsrLoggerInterface {
     }
 
     public function replaceSysBaseInfo($info){
-        if($this->_calledInfo){
+        if($this->_sysBaseInfo){
             foreach ($info as $k=>$v) {
                 foreach ($this->_sysBaseInfo as $k2=>$v2) {
                     if($k2 == $k){

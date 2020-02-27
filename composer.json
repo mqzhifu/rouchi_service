@@ -10,13 +10,14 @@
     }
   ],
   "require": {
-  "php": "^7.2",
-  "rouchi/jy_core": "*",
+    "php": "^7.2",
+    "rouchi/jy_core": "*",
     "rouchi/jy_db": "*",
     "rouchi/jy_config": "*",
     "rouchi/jy_common": "*",
-    "rouchi/jy_log": "*"
-},
+    "rouchi/jy_log": "*",
+    "rouchi/jy_redis": "*"
+  },
 "autoload": {
 "psr-4" : {
 "Rouchi\\" : ""

@@ -3,6 +3,8 @@
 namespace Jy;
 
 use Jy\Facade\Log;
+use Jy\Common\RequestContext\RequestContext;
+use Jy\Facade\Trace;
 
 class Dispatcher
 {
@@ -26,28 +28,23 @@ class Dispatcher
     {
         //..
         $requests = \Jy\App::$app->request;
-//        var_dump($requests);exit;
-//        Log::getInstance()->setSysBaseInfo("bbbb");
+
         // .. hook
         $result = $this->call($requests);
         return $result;
     }
-
-    function logAdapter($requests){
-        $arr = array(
-            'method'=>$requests->method,
-        );
-    }
-
 
     private function call(Request $request)
     {
         $module = $request->getModule();
         $action = $request->getAction();
         $args = $request->getArgs();
-        $version = $this->router->getRequestVersion();
+        $protocol = $request->getProtocol();
+        $version = $request->getVersion();
 
-        $namespace = "Rouchi\\Controller" .
+        $dir = $protocol == "cli" ? "Console" : "Controller";
+
+        $namespace = "Rouchi\\{$dir}" .
             "\\". ($version) . "\\" .
             str_ireplace("/", "\\\\", $module);
 
@@ -76,7 +73,13 @@ class Dispatcher
 
         echo $result;
 
+        Trace::setServiceSendTrace(is_object($result) ? $result->getData() : ['none']);
+
         Log::info("action end");
+        Log::buffFlushFile();
+
+        RequestContext::destroy();
+
         exit();
     }
 }

@@ -36,6 +36,10 @@ class File extends Main {
 
     function __construct(){
         parent::__construct();
+//        $sysInfo = \Jy\Common\RequestContext\RequestContext::get('sys_data');
+//        if($sysInfo){
+//            $this->setSysBaseInfo($sysInfo);
+//        }
     }
 
     function init($k,$v){
@@ -160,19 +164,24 @@ class File extends Main {
     }
 
     function buffFlushFile(){
+
         if(!$this->_buffContent){
-            return flase;
-        }
-
-        $contentStr = "";
-        foreach ($this->_buffContent as $k=>$v) {
-            $info = $this->replaceCalledInfo($v);
-            $info = $this->replaceSysBaseInfo($info);
-            $contentStr .= $info . $this->_wrap;
-
+            return false;
         }
         $filePath = $this->_writePath . "/" .$this->_level. $this->_ext;
-        $this->writeFile($filePath,$contentStr);
+
+//        $contentStr = "";
+//        foreach ($this->_buffContent as $k=>$v) {
+//            $info = $this->replaceCalledInfo(json_decode($v,true));
+//            $info = $this->replaceSysBaseInfo($info);
+//            $contentStr .= json_encode($info) . $this->_wrap;
+//
+//        }
+//        $this->writeFile($filePath,$contentStr);
+
+        foreach ($this->_buffContent as $k=>$v) {
+            $this->writeFile($filePath,$v);
+        }
     }
 
     //持久化到文件中

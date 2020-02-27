@@ -25,12 +25,11 @@ class App
 
         static::$checkFramework = new \Jy\Util\CheckFramework();
 
-        // 上下文数据的初始化
-        static::initRequestContext();
-
         // tracing
         Trace::setServiceReceiveTrace();
 
+        // 上下文数据的初始化
+        static::initRequestContext();
         // 常量 配置 todo
         //...
     }
@@ -57,12 +56,14 @@ class App
             // data pre deal
             RequestContext::put('request_user_data', \Jy\App::$app->request->getUserData());
             RequestContext::put('request_data', \Jy\App::$app->request->getRequestParams());
-            RequestContext::put('request_sys_params', \Jy\App::$app->request->getRequestSysParams());
+            RequestContext::put('sys_data', \Jy\App::$app->request->getRequestSysParams());
             RequestContext::put('request_trace_cs_data', \Jy\App::$app->request->getRequestTraceParams());
+            RequestContext::put('request_header_data', \Jy\App::$app->request->getRequestHeaderParams());
 
             unset($_GET);
             unset($_POST);
             unset($_REQUEST);
+            //unset($_SERVER);
         }
 
     }

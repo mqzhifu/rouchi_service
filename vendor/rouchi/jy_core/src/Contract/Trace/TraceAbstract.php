@@ -6,6 +6,7 @@ use Jy\Contract\Trace\TraceInterface;
 use Jy\Common\RequestContext\RequestContext;
 use Jy\Facade\Config;
 use Jy\Facade\Redis;
+use Jy\Common\Helpers\MachineHelper;
 
 abstract class TraceAbstract implements TraceInterface
 {
@@ -26,11 +27,11 @@ abstract class TraceAbstract implements TraceInterface
 			'sr'		=> 0,
 			'ss'		=> 0,
 
-			'caller'	=> "",
+			'caller'	=> getAppName(),
 			'callee'	=> "",
 			'params'	=> "",
 			'result'	=> '',
-			'ip'		=> '',
+			'ip'		=> MachineHelper::getLocalIp(),
 		];
 	}
 
@@ -44,26 +45,26 @@ abstract class TraceAbstract implements TraceInterface
 		return $ret;
 	}
 
-	// cs  
+	// cs
     public static function setClientSendTrace(string $to, array $data)
     {
 		$traceData = RequestContext::get('trace_cs_data');
 		if (empty($traceData)) $traceData = RequestContext::get('trace_sr_data');
     	if (empty($traceData)) $traceData = static::getInitTrace();
-    	
+
 		$traceData['cs'] = static::increProcessMax((array)$traceData);
 		$traceData['spanid'] = static::increProcessMax((array)$traceData, "node");
 
 		if (!RequestContext::has('trace_cs_data')) {
-			$traceData['parentid'] = static::increProcessMax((array)$traceData, "level");	
+			$traceData['parentid'] = static::increProcessMax((array)$traceData, "level");
 		}
-		
+
 		$traceData['timestamp'] = microtime(true);
-		$traceData['caller'] = Config::get('app', "name") ?? "none";
+		$traceData['caller'] = getAppName();
 		$traceData['callee'] = $to;
 		$traceData['params'] = $data;
 		$traceData['result'] = '';
-		$traceData['ip'] = '';
+		$traceData['ip'] = MachineHelper::getLocalIp();
 
 		RequestContext::put('trace_cs_data', $traceData);
 
@@ -75,7 +76,7 @@ abstract class TraceAbstract implements TraceInterface
     {
 		$traceData['cr'] = static::increProcessMax((array)$traceData);
 		$traceData['timestamp'] = microtime(true);
-		$traceData['ip'] = '';// todo
+		$traceData['ip'] = MachineHelper::getLocalIp();
 
 		RequestContext::put('trace_cr_data', $traceData);
 
@@ -110,7 +111,8 @@ abstract class TraceAbstract implements TraceInterface
 		$traceData['sr'] = static::increProcessMax((array)$traceData);
 		$traceData['timestamp'] = microtime(true);
 		$traceData['params'] = RequestContext::get('request_data');
-		$traceData['ip'] = '';// todo
+		$traceData['ip'] = MachineHelper::getLocalIp();
+		$traceData['caller'] = getAppName();
 
 		RequestContext::put('trace_sr_data', $traceData);
 

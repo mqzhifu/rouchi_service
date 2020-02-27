@@ -1,8 +1,12 @@
 <?php
 namespace Jy;
 
-class JSONResponse {
+class JSONResponse
+{
 
+    private $userData;
+    private $code;
+    private $message;
     private $data;
 
     /**
@@ -12,6 +16,10 @@ class JSONResponse {
     public function __construct($data)
     {
         $this->data = $data;
+
+        $this->code = $data['code'] ?? null;
+        $this->message = $data['message'] ?? null;
+        $this->userData = $data['userData'] ?? null;
     }
 
     function __toString()
@@ -22,5 +30,20 @@ class JSONResponse {
     public function getData()
     {
         return $this->data;
+    }
+
+    public function getCode()
+    {
+        return $this->code;
+    }
+
+    public function getMessage()
+    {
+        return $this->message;
+    }
+
+    public function getUserData()
+    {
+        return $this->userData;
     }
 }

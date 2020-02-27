@@ -46,6 +46,12 @@
 
     # 事务
     DB::beginTransaction();
+
+    # 如果同一个项目用到了多实例，则：
+    DB::getInstance('mysql2', 'read', 'file')->insert(...);
+    # mysql 为配置文件中的配置项，参考lumen。 read则为读写配置,默认根据会根据具体的方法(insert)判定，file则可以指定具体的配置文件名，默认是database
+
+    # 也可以直接：DB::insert($sql, $param, 'mysql2', 'write', 'filename'); 后三项同上，默认，database里面的mysql的实例配置
 ```
 
 #### 关于数据库配置
@@ -53,7 +59,7 @@
 > DB则会默认读取database.php 的connects 里面的mysql的配置：配置形式可以参考lumen
 > 如果要使用多个数据库链接，除了mysql那一项的配置，其他的链接配置的DB实例需要自己封装一下
 >  比如： DB底层获取实例的方法的参数有3个：
->  >    public static function getInstance($model = '', $name = '', $type = "write")
+>  >    public static function getInstance($name = '', $type = "write", $model = '')
 >  >    model即配置文件夹的名称：比如database, $name即connects里面的链接配置项：比如mysql, $type：则为指定读库或者是写库
 >  >    每个操作都可以指定不同的链接，当然，不指定就是默认的：mysql
 

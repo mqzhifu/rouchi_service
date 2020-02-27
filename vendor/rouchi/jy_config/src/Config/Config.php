@@ -16,14 +16,15 @@ class Config extends  ConfigAbstract
 
         $flag = mb_stripos($module, '@');
         if ($flag !== false && $flag == 0) {
-            return $this->getAlias($module, $key);
+            return $this->getAlias($module);
         }
 
         $moduleFile = rtrim(ROUCHI_CONF_PATH, '/') .'/' . $module . ".php";
 
         if (!file_exists($moduleFile)) {
-            throw new \Exception('config:' . $moduleFile . '文件名不存在');
+            return [];
         }
+
         $res = require $moduleFile;
 
         return ArrayHelper::getItem((array) $res, $key, []);
@@ -35,10 +36,10 @@ class Config extends  ConfigAbstract
         return null;
     }
 
-    public function getAlias($module = '', $key = '')
+    public function getAlias($alias = '')
     {
-        $module = mb_substr($module, 1);
-        $dotArr = explode('.', $module);
+        $alias = mb_substr($alias, 1);
+        $dotArr = explode('.', $alias);
         $tmp = $dotArr;
 
         $file = rtrim(ROUCHI_CONF_PATH, DIRECTORY_SEPARATOR);

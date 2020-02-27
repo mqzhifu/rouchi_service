@@ -145,11 +145,11 @@ class Di{
     //入口，获取一个类的实例化
     function getClassInstance($className,$father = null){
         if(!class_exists($className)){
-            $this->throwException(502,$className);
+            $this->throwException(502,array($className));
         }
 
         if($this->_execCnt > $this->_execCntMax){
-            $this->throwException(501,$this->_execCntMax);
+            $this->throwException(501,array($this->_execCntMax));
         }
         //获取反射类
         $relClass = new \ReflectionClass($className);
@@ -158,7 +158,7 @@ class Di{
         if (!$isInstantiable ) {
             $method = $this->getClassMethods($relClass, $this->_getInstanceFuncName);
             if(!$method)
-                $this->throwException(503,$className);
+                $this->throwException(503,array($className));
         }
         // 查看是否有：构造函数
         $constructorMethod = $relClass->getConstructor();

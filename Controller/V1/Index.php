@@ -9,7 +9,14 @@ use Jy\Facade\DB;
 use Jy\Facade\Log;
 use Jy\Facade\Redis;
 use Jy\Request;
-use \Jy\Common\Valid\Facades\Valid;
+use Jy\Common\Valid\Facades\Valid;
+
+use Rouchi\Product\OrderBean;
+use Rouchi\Product\SmsBean;
+use Rouchi\Product\UserBean;
+
+
+include_once 'D:\www\rouchi\rouchi_service\vendor\rouchi\jy_common\src\MsgQueue\Test\testUnitClient.php';
 
 class Index extends Controller
 {
@@ -20,12 +27,36 @@ class Index extends Controller
      */
     public function index(Valid $valid , Request $request)
     {
-        echo 444;
-        var_dump($request);
-        $rule = array(
-            "a"=>'int|require');
-        echo json_encode($rule);
-//        $data = Config::get('redis', 'redis');
+
+        clearAll();
+
+        $OrderBean = new OrderBean();
+        $UserBean = new UserBean();
+        $SmsBean = new SmsBean();
+
+
+        $OrderBean->_id = 1;
+        $OrderBean->_channel = 'baidu';
+        $OrderBean->send();
+
+        $UserBean->_id = 2;
+        $UserBean->send();
+
+        $SmsBean->_msg = "aaa";
+        $SmsBean->send();
+
+
+
+
+//        echo 444;
+//        var_dump($request);
+//        $rule = array(
+//            "a"=>'int|require');
+//        echo json_encode($rule);
+//
+//        Log::buffFlushFile();
+        $redisConf = Config::get('redis', 'redis');
+
 //
 //        $feilds = ['password', 'name', 'mobile'];
 //
@@ -46,5 +77,6 @@ class Index extends Controller
 //        return $this->json(['ret' => $ret]);
 
     }
+
 }
 

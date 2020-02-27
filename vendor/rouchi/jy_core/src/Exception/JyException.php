@@ -16,9 +16,9 @@ class JyException extends \ErrorException
         try {
 
             $ret = [];
-            $handle = Config::get('exception', 'Handle');
-            
-            if (!empty($handle) && class_exists($handle) 
+            $handle = Config::get('@app.Exception.Handle');
+
+            if (!empty($handle) && class_exists($handle)
                 && ( ( $handleObj = new $handle ) instanceof JyExceptionInterface) ) {
                 $ret = call_user_func([$handleObj, 'deal'], $param['e']);
             }
@@ -26,25 +26,27 @@ class JyException extends \ErrorException
             $fromType = $param['from'] ?? 'sys';
             unset($param['from']);
 
-            $result = new \Jy\JSONResponse(['code' => $ret['code'] ?? $param['type'], 'message' => $ret['message'] ?? $param['message'], 'data' => $ret['data'] ?? []]);
+            $result = \Jy\App::$app->response->json($ret['data'] ?? [],$ret['code'] ?? $param['type'],$ret['message'] ?? $param['message']);
             echo $result;
         } catch (\Throwable $e) {
 
-            $result =  new \Jy\JSONResponse([
-                'code' => $e->getCode(),
-                'message' => $e->getMessage(),
-                'data' => [
+            $result =  \Jy\App::$app->response->json(
+                [
                     //'trace' => $e->getTrace(),
                     //'line' => $e->getLine(),
                 ],
-            ]);
-            
+                $e->getCode(),
+                $e->getMessage(),
+            );
+
             echo $result;
         }
 
         Log::error($this->getLogContent());
 
         Trace::setServiceSendTrace($result->getData());
+
+        Log::buffFlushFile();
 
         RequestContext::destroy();
 
