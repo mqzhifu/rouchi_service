@@ -484,8 +484,8 @@ $GLOBALS['mqConfig'] = array(
                         "bind_header_map"=>array(
                             "Rouchi\Product\SmsBean"=>"Rouchi\Product\SmsBean",
                             "Rouchi\Product\UserBean"=>"Rouchi\Product\UserBean",
-                            'x-match'=>'any'),
-                        'bind_routing_key'=>"",
+                            'x-match'=>'any'
+                        ),
                         'arguments'=>array(
                             'x-expires'=>0,//整个队列失效时间
                             'x-message-ttl'=>0,//所有进入该队列消息的，TTL时效
@@ -499,8 +499,8 @@ $GLOBALS['mqConfig'] = array(
                         "bind_header_map"=>array(
                             "Rouchi\Product\OrderBean"=>"Rouchi\Product\OrderBean",
                             "Rouchi\Product\UserBean"=>"Rouchi\Product\UserBean",
-                            'x-match'=>'any'),
-                        'bind_routing_key'=>"",
+                            'x-match'=>'any'
+                        ),
                         'arguments'=>array(
                             'x-expires'=>0,//整个队列失效时间
                             'x-message-ttl'=>0,//所有进入该队列消息的，TTL时效
@@ -514,7 +514,6 @@ $GLOBALS['mqConfig'] = array(
                             "Rouchi\Product\UserBean"=>"Rouchi\Product\UserBean",
                             'x-match'=>'any'
                         ),
-                        'bind_routing_key'=>"",
                         'arguments'=>array(
                             'x-expires'=>0,//整个队列失效时间
                             'x-message-ttl'=>0,//所有进入该队列消息的，TTL时效
@@ -529,7 +528,6 @@ $GLOBALS['mqConfig'] = array(
                             "Rouchi\Product\PaymentBean"=>"Rouchi\Product\PaymentBean",
                             'x-match'=>'any'
                         ),
-                        'bind_routing_key'=>"",
                         'arguments'=>array(
                             'x-expires'=>0,//整个队列失效时间
                             'x-message-ttl'=>0,//所有进入该队列消息的，TTL时效

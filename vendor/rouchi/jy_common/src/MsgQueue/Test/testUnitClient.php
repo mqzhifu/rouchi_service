@@ -25,7 +25,7 @@ use Jy\Common\MsgQueue\MsgQueue\RabbitmqBean;
 
 
 //clearAll();
-testUnit(8);
+//testUnit(8);
 
 
 //$rabbit = new RabbitmqBean();

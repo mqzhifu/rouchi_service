@@ -3,30 +3,21 @@ namespace Jy\Common\MsgQueue\MsgQueue;
 
 class RabbitmqBean extends \Jy\Common\MsgQueue\MsgQueue\RabbitmqBase{
     private $_exchange = "many.header.delay";
-    private $_deadLetterExchange = "test.header.delay.dead_ex";
-    //消息分为：header+body+arguments   . arguments是约束消息，header 是补充约束(还可以自定义)
     private $_header = null;
-//    private $_callbackUserAck = null;
-//    private $_callbackUserNAck = null;
-    private $_callbackUserConsumer = null;
-    private $_mode = 0;//0为普通模式 1为确认模式 2为事务模式，一但设置了确认模式或者事务模式就不能再变更，这两种模式是互斥的
+    //一但设置了确认模式或者事务模式就不能再变更，这两种模式是互斥的
+    private $_mode = 0;
     private $_modeDesc = array(0=>'普通模式',1=>'确认模式',2=>'事务模式');
     //业务类的名称，主要用于binding header exchange
     private $_childClassName = "";
     //每个consumer最大同时可处理消息数
     private $_consumerQos = 0;
     private $_defaultConsumerQos = 5;
-
-
+    //生产者，注册 ACK 回调函数-集合
     private $_userBeanAckCallback = array();
+    //生产者，注册 N-ACK 回调函数-集合
     private $_userBeanNAckCallback = array();
 
-    //以下暂不用
-    private $_redisMsgStatusManager = 0;//帮业务人员，开启消息一致性
-//    private $_roleDesc = array(1=>'product',2=>'consumer');
-//    private $_role = 0;
-
-    function __construct($conf ,$debug  ){
+    function __construct($conf ,$debug = 0  ){
         if(!$conf){
             $this->throwException(515);
         }
@@ -36,12 +27,12 @@ class RabbitmqBean extends \Jy\Common\MsgQueue\MsgQueue\RabbitmqBase{
             parent::setDebug($debug);
         }
 
-
         parent::__construct($conf);
         $this->init();
 
     }
 
+    //初始化
     function init(){
         $this->initBase();
         $this->regDefaultAllCallback();
@@ -86,11 +77,19 @@ class RabbitmqBean extends \Jy\Common\MsgQueue\MsgQueue\RabbitmqBase{
     function setTopicName($name){
         $this->_exchange = $name;
     }
-    //发送一条消息给路由器
-    //$msgBody:发送消息体，可为json object string
-    //$arguments:对消息体的一些属性约束
-    //$header:主要是发送延迟队列时，使用
-    function send($msgBody,$arguments = null,$header = null){
+
+    function getTopicName(){
+       return $this->_exchange;
+    }
+
+
+    /*
+     *  发送一条消息给路由器
+        $msgBody:发送消息体，可为json object string
+        $arguments:对消息体的一些属性约束
+        $header:主要是发送延迟队列时，使用
+    */
+    function send($msgBody,$arguments = null,$header = null,$isRetry = 0){
         if(!$msgBody)
             $this->throwException(500);
 
@@ -98,9 +97,39 @@ class RabbitmqBean extends \Jy\Common\MsgQueue\MsgQueue\RabbitmqBase{
         if(is_bool($msgBody))
             $this->throwException(501);
 
+        $msgId = $this->createUniqueMsgId();
+        $arguments = $this->setCommonArguments($arguments,$msgId,$msgBody);
+        if(is_object($msgBody)){
+            if(!$arguments){
+                $arguments = ['content_type'=>'application/serialize'];
+            }else{
+                $arguments['content_type'] = 'application/serialize';
+            }
+            $msgBody = serialize($msgBody);
+        }
+        elseif(is_array($msgBody) ){
+            if(!$arguments){
+                $arguments = ['content_type'=>'application/json'];
+            }else{
+                $arguments['content_type'] = 'application/json';
+            }
+            $msgBody = json_encode($msgBody);
+        }
+
+        $rabbitHeader = $this->preProcessHeader($header);
+
+        $this->publish($msgBody,$this->_exchange,"",$rabbitHeader,$arguments);
+        if($this->_mode == 1){
+            $this->waitReturnListener();
+        }
+
+        return $msgId;
+    }
+    //预处理，头信息
+    function preProcessHeader($header = null){
         //校验 延迟队列 的时间值
-        if(isset($arguments['x-delay']) && $arguments['x-delay']){
-            $delayTime = (int)$arguments['x-delay'];
+        if(isset($header['x-delay']) && $header['x-delay']){
+            $delayTime = (int)$header['x-delay'];
             if(!$delayTime ){
                 $this->throwException(517);
             }
@@ -110,29 +139,20 @@ class RabbitmqBean extends \Jy\Common\MsgQueue\MsgQueue\RabbitmqBase{
             }
 
             $day = 7 * 24 * 60 *60 * 1000;
-            if( $arguments['x-delay'] > $day){
+            if( $delayTime > $day){
                 $this->throwException(519);
             }
         }
 
-        $msgId = $this->createUniqueMsgId();
-        $arguments = $this->setCommonHeader($arguments,$msgId,$msgBody);
         //主要是给，延迟队列
         $rabbitHeader = $this->_header;
         if($header ){
             $rabbitHeader = array_merge($rabbitHeader,$header);
         }
-
-
-        $publishServerRs = $this->publish($msgBody,$this->_exchange,"",$rabbitHeader,$arguments);
-        if($this->_mode == 1){
-            $this->waitReturnListener();
-        }
-
-        return $msgId;
+        return $rabbitHeader;
     }
-
-    function setCommonHeader($arguments,$msgId,$msgBody){
+    //设置 默认 参数值
+    function setCommonArguments($arguments,$msgId){
         if($arguments){
             if(isset($arguments['message_id']) && $arguments['message_id']){
                 $this->throwException(502);
@@ -157,36 +177,15 @@ class RabbitmqBean extends \Jy\Common\MsgQueue\MsgQueue\RabbitmqBase{
 
         if($this->_mode == 1){//确认模式
             $arguments['type'] = "confirm";
-//            if($this->_redisMsgStatusManager){
-//                RedisMsgStatusAck::redisSetMsgStatusAck($msgId,RedisMsgStatusAck::$_statusProductWait);
-//            }
         }elseif($this->_mode == 2){//事务模式
             $arguments['type'] = "tx";
         }else{
             $arguments['type'] = "normal";
         }
 
-        if(is_object($msgBody)){
-            if(!$arguments){
-                $arguments = ['content_type'=>'application/serialize'];
-            }else{
-                $arguments['content_type'] = 'application/serialize';
-            }
-            $msgBody = serialize($msgBody);
-        }
-        elseif(is_array($msgBody) ){
-            if(!$arguments){
-                $arguments = ['content_type'=>'application/json'];
-            }else{
-                $arguments['content_type'] = 'application/json';
-            }
-            $msgBody = json_encode($msgBody);
-        }
-
         return $arguments;
     }
-
-
+    //设置 模式
     function setMode(int $mode){
         if(!in_array($mode,array_flip($this->_modeDesc))){
             $this->throwException(504);
@@ -206,15 +205,14 @@ class RabbitmqBean extends \Jy\Common\MsgQueue\MsgQueue\RabbitmqBase{
 
         $this->_mode = $mode;
     }
-
-
+    //用户注册ACK回调
     function regUserCallbackAck($callback){
         $this->_userBeanAckCallback[$this->_childClassName] = $callback;
     }
     function regUserCallBackNAck($callback){
         $this->_userBeanNAckCallback[$this->_childClassName] = $callback;
     }
-
+    //用户注册N-ACK回调
     function callbackUser($callback,$argc){
         if($callback){
             return call_user_func($callback,$argc);
@@ -234,8 +232,8 @@ class RabbitmqBean extends \Jy\Common\MsgQueue\MsgQueue\RabbitmqBase{
                 foreach ($attr['header'] as $k=>$v) {
                     foreach ($this->_userBeanAckCallback as $k2=>$v2) {
                         if($k == $k2){
-                            $recall = array("AMQPMessage"=>$AMQPMessage,'body'=>$body,'attr'=>$attr);
-                            $this->callbackUser($v2,$recall);
+//                            $recall = array("AMQPMessage"=>$AMQPMessage,'body'=>$body,'attr'=>$attr);
+                            $this->callbackUser($v2,$body);
                             break;
                         }
                     }
@@ -243,15 +241,6 @@ class RabbitmqBean extends \Jy\Common\MsgQueue\MsgQueue\RabbitmqBase{
             }else{
                 $this->throwException(520);
             }
-
-//            if($this->_mode == 1){
-//                if($this->_redisMsgStatusManager){
-//                    $msgStatus = RedisMsgStatusAck::redisGetMsgStatusAck($attr['message_id']);
-//                    RedisMsgStatusAck::redisSetMsgStatusAck($attr['message_id'],RedisMsgStatusAck::$_statusProductOk);
-//                    $info = " sendStatus:".$msgStatus['status'] . " sendTime:".date("Y-m-d H:i:s",$msgStatus['time']);
-//                    $this->out($info);
-//                }
-//            }
 
             if(is_array($body)){
                 $body = json_encode($body);
@@ -270,8 +259,8 @@ class RabbitmqBean extends \Jy\Common\MsgQueue\MsgQueue\RabbitmqBase{
             $info = RabbitmqBase::debugMergeInfo($attr);
 
 
-            $recall = array("AMQPMessage"=>$AMQPMessage,'body'=>$body,'attr'=>$attr);
-            $this->callbackUser($this->_callbackUserNAck,$recall);
+//            $recall = array("AMQPMessage"=>$AMQPMessage,'body'=>$body,'attr'=>$attr);
+            $this->callbackUser($this->_callbackUserNAck,$body);
 
             $this->out(" body : $body ".json_encode($body) . " , $info");
             $this->throwException(506,array($info));
@@ -302,7 +291,7 @@ class RabbitmqBean extends \Jy\Common\MsgQueue\MsgQueue\RabbitmqBase{
         $this->getChannel()->set_nack_handler($clientNAck);
         $this->getChannel()->set_ack_handler($clientAck);
     }
-
+    //开启 - 消费者 - 监听
     function groupSubscribe($userCallback,$consumerTag = "",$autoDel = false,$durable = true,$noAck =false){
         $this->out("start groupSubscribe consumerTag:$consumerTag");
         if(!$consumerTag){
@@ -323,111 +312,109 @@ class RabbitmqBean extends \Jy\Common\MsgQueue\MsgQueue\RabbitmqBase{
         $this->baseSubscribe($this->_exchange,$queueName,$consumerTag,$userCallback,$noAck);
         $this->startListenerWait();
     }
+//    //消费者 - 想监听 - 多个事件 的时候，需要 初始化 队列 信息
+//    function consumerInitQueue($queueName,$arguments= null,$durable= null,$autoDel= null,$bindingBeans){
+//        if(!$this->queueExist($queueName)){
+//            $this->setQueue($queueName,$arguments,$durable,$autoDel);
+//        }
+//
+//        $header = array("x-match"=>'any');
+//        foreach ($bindingBeans as $k=>$v) {
+//            $header[] = array($v=>$v);
+//        }
+//
+//        $this->bindQueue($queueName,$this->_exchange,null,$header);
+//    }
 
-    //consumer  =====================================================
-
-    function setHeader(){
-
-    }
-
-    function setQueueName(){
-
-    }
-
+    //创建一个队列
     function createQueue($queueName,$arguments= null,$durable= null,$autoDel= null){
         if($this->queueExist($queueName)){
             return true;
         }else{
             $this->setQueue($queueName,$arguments,$durable,$autoDel);
         }
-
     }
-
-    function createTopic(){
-
-    }
-
+    //一个consumer最多可同时接收rabbitmq 消费数
     function setBasicQos(int $num){
         $this->out("setBasicQos $num");
         $this->_consumerQos = $num;
         $this->getChannel()->basic_qos(null,$num,null);
     }
-
+    //绑定一个队列
     function setBindQueue($queueName,$exchange,$routingKey,$header){
         $this->bindQueue($queueName,$exchange,$routingKey,$header);
         $this->waitReturnListener();
     }
-
+    //给消费，注册 监听 多个事件
     function setListenerBean($beanName,$callback){
         if(!is_object($beanName)){
             $this->throwException(514);
         }
-//        $finalBeanName = substr($beanName,0,strlen($beanName) - 4);
-//        $this->_header[$finalBeanName] = $finalBeanName;
-//        $this->_bean[$finalBeanName][] = $callback;
 
         $name = get_class($beanName);
+
+
+        $info = " no info";
+        if(is_array($callback)){
+            $callbackClassName = get_class($callback[0]);
+            $callbackClassMethod = $callback[1];
+
+            $info = " $callbackClassName -> $callbackClassMethod ()";
+        }
+
+        $this->out("setListenerBean className:$name  callbackInfo:" .$info );
 
         $this->_header[$name] = $name;
         $this->_bean[$name][] = $callback;
     }
-
-    function mappingBeanCallbackSwitch($recall){
+    //rabbitmq push consumer 时，将消息分发给 不同的bean
+    function mappingBeanCallbackSwitch($body){
         $this->out("im mappingBeanCallbackSwitch func.");
-        $header = $recall['attr']['header'];
-        $callback = 0;
-        foreach ($this->_bean as $k=>$v) {
-//            var_dump($header);
-//            var_dump($v);
-//            $productName  = substr($k,0,strlen($k)-4);
-//            if(isset($header[$productName]) && $header[$productName]){
-            if(isset($header[$k]) && $header[$k]){
-                $callback  = $v;
-                break;
-            }
-        }
+//        $header = $recall['attr']['header'];
+        $className = get_class($body);
 
-        if(!$callback){
+        if(!isset($this->_bean[$className]) || ! $this->_bean[$className]){
             $this->throwException(513);
         }
+//        $callback = 0;
+//        foreach ($this->_bean as $k=>$v) {
+//            if(isset($header[$k]) && $header[$k]){
+//                $callback  = $v;
+//                break;
+//            }
+//        }
 
+//        if(!$callback){
+//            $this->throwException(513);
+//        }
+        $callback = $this->_bean[$className];
         foreach ($callback as $k=>$v) {
-            call_user_func($v,$recall);
+//            var_dump($v);
+            call_user_func($v,$body);
         }
 
-//        return call_user_func($callback,$recall);
     }
-
+    //消费者 开启 订阅 监听
     function subscribe($queueName, $consumerTag = "",$noAck = false){
+        $this->out(" rabbitmqBean subscribe start: queueName:$queueName consumerTag:$consumerTag noAck:$noAck");
         $consumerCallback = function($recall) use ($noAck){
             if (!$noAck) {
                 return $this->mappingBeanCallbackSwitch($recall);
             }
         };
 
-        $this->bindQueue($queueName,$this->_exchange,null,$this->_header);
+//        $this->bindQueue($queueName,$this->_exchange,null,$this->_header);
         if(!$consumerTag){
             $consumerTag = $queueName .__CLASS__;
         }
-
 
         if(!$this->_consumerQos){
             $this->setBasicQos($this->_defaultConsumerQos);
         }
 
         $this->baseSubscribe($this->_exchange,$queueName, $consumerTag, $consumerCallback,$noAck);
-
         $this->startListenerWait();
     }
-
-//    function waitAckReturnListener(){
-//        $this->waitAck(100);
-//        $this->waitReturnListener(100);
-//    }
-
-//    function waitAck(){
-//        $this->getChannel()->wait_for_pending_acks(100);
-//    }
 
     function waitReturnListener(){
         $this->getChannel()->wait_for_pending_acks_returns(100);

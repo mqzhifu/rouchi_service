@@ -17,7 +17,7 @@ use Rouchi\Product\SmsBean;
 use Rouchi\Product\UserBean;
 
 
-//include_once 'D:\www\rouchi\rouchi_service\vendor\rouchi\jy_common\src\MsgQueue\Test\testUnitClient.php';
+include_once 'D:\www\rouchi\rouchi_service\vendor\rouchi\jy_common\src\MsgQueue\Test\testUnitClient.php';
 
 class Index extends Controller
 {
@@ -29,30 +29,36 @@ class Index extends Controller
     public function index(Valid $valid , Request $request)
     {
 
-
-        $PaymentBean = new PaymentBean();
-        $OrderBean = new OrderBean();
-        $UserBean = new UserBean();
         $SmsBean = new SmsBean();
+        $OrderBean = new OrderBean();
+        $PaymentBean = new PaymentBean();
+        $UserBean = new UserBean();
+
+
+
+
+//        $SmsBean->_msg = "aaa";
+//        $SmsBean->send();
 
 
         $OrderBean->_id = 1;
         $OrderBean->_channel = 'baidu';
         $OrderBean->send();
-        $OrderBean->sendDelay(5000);
-
-        $UserBean->_id = 2;
-        $UserBean->send();
-
-        $SmsBean->_msg = "aaa";
-        $SmsBean->send();
+//        $OrderBean->sendDelay(10000);
 
 
-        $PaymentBean->_price = '100';
-        $PaymentBean->send();
+//        $PaymentBean->_price = '100';
+//        $PaymentBean->send();
+
+//        $UserBean->_id = 2;
+//        $UserBean->send();
 
 
 
+
+
+
+//        throw new NackExcepiton(10,1000);
 
 
 
@@ -91,6 +97,6 @@ class Index extends Controller
 //        return $this->json(['ret' => $ret]);
 
     }
-
+    //
 }
 

@@ -13,6 +13,7 @@ class PaymentBean extends MessageQueue{
     }
 
     function ackHandle($data){
+//        var_dump($data);
         echo "PaymentBean receive rabbitmq server callback ack info. end<br/>";
     }
 }
