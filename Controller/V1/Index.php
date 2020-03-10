@@ -17,7 +17,7 @@ use Rouchi\Product\SmsBean;
 use Rouchi\Product\UserBean;
 
 
-include_once 'D:\www\rouchi\rouchi_service\vendor\rouchi\jy_common\src\MsgQueue\Test\testUnitClient.php';
+include_once './../vendor/rouchi/jy_common/src/MsgQueue/Test/testUnitClient.php';
 
 class Index extends Controller
 {
