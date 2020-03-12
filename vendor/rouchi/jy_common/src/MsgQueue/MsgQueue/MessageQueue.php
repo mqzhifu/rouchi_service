@@ -13,7 +13,7 @@ abstract class MessageQueue{
     private $_queueMessageDurable = true;
 
     private $_customBindBean = [];
-
+    private $_retry = null;
 
 
 
@@ -22,11 +22,22 @@ abstract class MessageQueue{
         //子类名，即是 协议，即是 标识
         $this->_flag = get_called_class();
         MsgQueue::_outInit($this->_flag);
+
+        $this->_retry = MsgQueue::getInstance()->getRetryTime();
     }
     //发送一条普通消息给mq
     function send(){
         return MsgQueue::_outInit($this->_flag)->send($this);
     }
+
+    function setRetryTime(array $retry){
+        $this->_retry = $retry;
+    }
+
+    function getRetryTime(){
+        return $this->_retry;
+    }
+
     //发送一条延迟消息
     function sendDelay(int $msTime ){
         $arr = array('x-delay'=>$msTime);
@@ -66,9 +77,15 @@ abstract class MessageQueue{
         return MsgQueue::transactionRollback();
     }
     //一个consumer同时可处理的消息最大数
-    function setBasicQos(int $num){
-        return MsgQueue::setBasicQos($num);
+    function setReceivedServerMsgMaxNumByOneTime(int $num){
+        return MsgQueue::setReceivedServerMsgMaxNumByOneTime($num);
     }
+
+    function setCustomerQueueName(string $queueName){
+        $this->_queueName = $queueName;
+        $this->_customTagName = $queueName;
+    }
+
 
     function setQueueName(string $queueName){
         $this->_queueName = $queueName;
@@ -111,16 +128,16 @@ abstract class MessageQueue{
 
         $header = array("x-match"=>'any');
         foreach ($this->_customBindBean as $k=>$v) {
-            $header[] = array($v=>$v);
+            $header[$v] = $v;
         }
 
         MsgQueue::getInstance()->bindQueue($this->_queueName,MsgQueue::getInstance()->getTopicName(),null,$header);
         MsgQueue::getInstance()->subscribe($this->_queueName,$this->_customTagName);
     }
 
-    function setRetryTime(array $time){
-        MsgQueue::getInstance()->setRetryTime($time);
-    }
+//    function setRetryTime(array $time){
+//        MsgQueue::getInstance()->setRetryTime($time);
+//    }
 
     function setSubscribeBean(array $beans){
         foreach ($beans as $k=>$bean) {

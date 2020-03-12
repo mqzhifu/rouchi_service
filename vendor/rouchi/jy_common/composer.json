@@ -12,7 +12,8 @@
     "require": {
         "php": "^7.2",
         "php-amqplib/php-amqplib": "2.8.0",
-        "rouchi/Jy_config": "*"
+        "rouchi/Jy_config": "*",
+        "rouchi/Jy_log": "*"
     },
     "autoload": {
         "psr-4" : {

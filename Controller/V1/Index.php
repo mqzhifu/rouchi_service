@@ -35,7 +35,7 @@ class Index extends Controller
         $UserBean = new UserBean();
 
 
-
+        $SmsBean->setDebug(3);
 
 //        $SmsBean->_msg = "aaa";
 //        $SmsBean->send();

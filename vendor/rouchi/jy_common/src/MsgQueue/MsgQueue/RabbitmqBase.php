@@ -6,25 +6,32 @@ use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Wire\AMQPTable;
 use PhpAmqpLib\Message\AMQPMessage;
+use Jy\Log\Facades\Log;
 
 class RabbitmqBase implements AmqpBaseInterface {
-    private $_consumerStopWait = 0;
-    public $_retryTime  = array(1,5,10);
-    private $_debug = 0;
-    private $_conn = null;
-    private $_channel = null;
-    private $_confKey = array('host','port','user','pwd','vhost');
-    private $_userCallbackFuncExecTimeout = 60;
-    protected $_conf = null;
-    private $_startLoopDead = false;
-    private $_loopDeadCustomerTag = "";
-    private $_userShutdownCallback = "";
+    //调试模式,0:关闭，1：只输出到屏幕 2：只记日志 3：输出到屏幕并记日志
+    private $_debug = 0;//注：开启 日志模式，记得引入log包
+    private $_conn = null;//SOCK FD
+    private $_channel = null;//channel
 //    private $_conf =['host' => '127.0.0.1', 'port' => 5672, 'user' => 'root', 'pwd' => 'root', 'vhost' => '/',];
 //    private $_conf =['host' => '172.19.113.249', 'port' => 5672, 'user' => 'root', 'pwd' => 'sfat324#43523dak&', 'vhost' => '/',];
-    private $_pidPath = "/tmp/rabbitmq.pid";
-    private $_nowStop = 0;
-    private $_timeOutCallback = null;
+    private $_conf = null;//连接，配置信息
+    private $_confKey = array('host','port','user','pwd','vhost');//连接，配置信息，KEY值
 
+    private $_consumerStopWait = 0;//用户取消了绑定，结束守护
+    private $_retryTime  = array(1,5,10);//重试 次数及时间
+    private $_userCallbackFuncExecTimeout = 5;//用户回调函数，超时时间
+
+    private $_startLoopDead = false;//已开始 死循环  守护模式
+    private $_loopDeadCustomerTag = "";//跟consumerTag值相同，用于发消息给rabbitmq 取消订阅
+    private $_userShutdownCallback = "";//consumer进程结束守护时，回调用户自定义<收尾>函数
+
+    public $_pidPath = "/tmp/php_consumer_rabbitmq.pid";
+    public $_signalStopLoop = 0;//收到结束信号，立即停止 守护模式
+    public $_timeOutCallback = null;//超时，回调函数
+
+    //一条消息最大值，KB为单位
+    private $_messageMaxLength = 1024;
 
     private $_codeErrMessage = array(
         400=>'code is null',
@@ -60,6 +67,7 @@ class RabbitmqBase implements AmqpBaseInterface {
         527=>" timeout min 10",
         528=>" timeout max 600",
         529=>"exec user program timeout ",
+        530=>"message length > {0}",
 
         600=>"NOT_FOUND - no exchange",
         601=>"PRECONDITION_FAILED - cannot switch from confirm to tx mode",
@@ -75,42 +83,59 @@ class RabbitmqBase implements AmqpBaseInterface {
     }
 
     function initBase(){
-        $this->initConn();//创建连接
-        $this->initChannel();//获取管道
+        $this->getConn();//创建连接
+        $this->getChannel();//创建管道
     }
 
-    function setConf($conf){
-        $this->_conf = $conf;
-    }
+    function testENV(){
+        $os = $this->getOs();
+        $this->out("os:".$os);
+        if($os === "WIN"){
+            $this->out("notice:  linux os is very good.");
+        }
 
-    function setDebug($flag){
-        $this->_debug =  $flag;
-    }
+        if($this->supportsPcntlSignals()){
+            $this->out("notice : pcntl ext not supports");
+        }
 
-    function initConn(){
-        $this->_conn = $this->getConn();
-        return $this->_conn;
+        if(class_exists("Jy\Log\Facades\Log")){
+            $this->out("notice : depend on :Log composer bag");
+        }
+
+//        if(extension_loaded("mbstring")){
+//            $this->out("notice : mbstring ext not supports");
+//        }
     }
 
     function getConn(){
         if($this->_conn){
-            return $this->_conn;
+            //虽然 连接有数据，但可能 连接已经断了
+            if($this->_conn->isConnected()){
+                return $this->_conn;
+            }
+
+            $this->resetConn();
         }
+
+        $insist = false;
+        $login_method = 'AMQPLAIN';
+        $login_response = null;
+        $locale = 'en_US';
+
+
+        $connection_timeout = 3.0;
+        $read_write_timeout = 5.0;
+        $context = null;
+        $keepAlive = false;
+        $heartbeat = 0;
+
 
         $conf = $this->_conf;
         $conn = new AMQPStreamConnection( //建立生产者与mq之间的连接
-            $conf['host'], $conf['port'], $conf['user'], $conf['pwd'], $conf['vhost']
+            $conf['host'], $conf['port'], $conf['user'], $conf['pwd'], $conf['vhost'],
+            $insist,$login_method,$login_response,$locale,
+            $connection_timeout,$read_write_timeout,$context,$keepAlive,$heartbeat
         );
-
-//        $insist = false,
-//        $login_method = 'AMQPLAIN',
-//        $login_response = null,
-//        $locale = 'en_US',
-//        $connection_timeout = 3.0,
-//        $read_write_timeout = 3.0,
-//        $context = null,
-//        $keepalive = false,
-//        $heartbeat = 0
 
         $this->out("connect rabbit config;".json_encode($conf));
         if(!$conn->isConnected()){
@@ -143,19 +168,13 @@ class RabbitmqBase implements AmqpBaseInterface {
         $this->out("reset connect");
         $this->_conn = null;
         $this->_channel = null;
-        $this->initChannel();
-    }
-
-    function initChannel(){
-        if(!$this->_conn){
-            $this->initConn();
-        }
-        $this->_channel = $this->_conn->channel(); //在已连接基础上建立生产者与mq之间的通道
+        $this->initBase();
     }
 
     function getChannel() : AMQPChannel{
         if(!$this->_channel){
-            $this->initChannel();
+            //在已连接基础上建立生产者与mq之间的通道
+            $this->_channel = $this->getConn()->channel();
         }
         return $this->_channel;
     }
@@ -178,6 +197,23 @@ class RabbitmqBase implements AmqpBaseInterface {
 
             throw new \Exception($message);
         }
+    }
+
+    function setConf($conf){
+        $this->_conf = $conf;
+    }
+
+    function setDebug($flag){
+        $this->_debug =  $flag;
+    }
+
+    //进程结束后回调函数
+    function regUserShutdownCallback($func){
+        $this->_userShutdownCallback = $func;
+    }
+
+    function setStopListenerWait($flag){
+        $this->_consumerStopWait = $flag;
     }
 
     function setRetryTime(array $time){
@@ -360,19 +396,29 @@ class RabbitmqBase implements AmqpBaseInterface {
         if($arguments){
             $finalArguments = array_merge($finalArguments,$arguments);
         }
+
+        if( strlen($msgBody) >= $this->_messageMaxLength){
+            $this->throwException(530,array($this->_messageMaxLength . " kb "));
+        }
+
         $AMQPMessage = new AMQPMessage($msgBody,$finalArguments);
         $this->getChannel()->basic_publish($AMQPMessage,$exchangeName,$routingKey,true);
         $this->baseWait();
     }
+
     //等待rabbitmq 返回内容
     function baseWait(){
         $this->getChannel()->wait_for_pending_acks_returns();
     }
     //重试机制
     function retry($attr,$body,$exchange,$msg){
-        if(!$this->getRetryTime()){
-            $this->out(" no set retry");
-            return true;
+        $beanRetry = $body->getRetryTime();
+        if(!$beanRetry){
+            $beanRetry = $this->getRetryTime();
+            if(!$beanRetry){
+                $this->out(" no set retry");
+                return true;
+            }
         }
 
         //重复-已发送次数
@@ -381,11 +427,14 @@ class RabbitmqBase implements AmqpBaseInterface {
             $retryCount = $attr['header']['x-retry-count'];
         }
 
+        $retryMax = count($beanRetry);
+
+
         $this->out("delivery_tag:".$msg->delivery_info['delivery_tag']);
         $this->out("attr:".json_encode($attr));
         //判断 是否 超过 最大投递次数
-        if ($retryCount >= $this->getRetryMax()) {
-            $this->out("$retryCount > getRetryMax  . $retryCount>= ".$this->getRetryMax());
+        if ($retryCount >=  $retryMax ) {
+            $this->out("$retryCount > getRetryMax ( ".$retryMax." )");
             $msg->delivery_info['channel']->basic_reject($msg->delivery_info['delivery_tag'], false);
             $this->out("reject msg ".$msg->delivery_info['delivery_tag']);
             return true;
@@ -398,13 +447,13 @@ class RabbitmqBase implements AmqpBaseInterface {
 //        try{
 //            $this->txSelect();
 
-        $baseRetryCnt = $this->getRetryTime();
+//        $baseRetryCnt = $this->getRetryTime();
 //        $this->out("baseRetryCnt:".json_encode($baseRetryCnt));
         $arguments = $attr;//原 消息属性得保留，如 msg_id
         $header = $attr['header'];
         unset($arguments['header']);
         //延迟时间
-        $header['x-delay'] = $baseRetryCnt[$retryCount] * 1000;
+        $header['x-delay'] = $beanRetry[$retryCount] * 1000;
         $header['x-retry-count'] = $retryCount+1;
 //        $this->out("header:".json_encode($header));
 
@@ -422,41 +471,52 @@ class RabbitmqBase implements AmqpBaseInterface {
     }
 
 
-    //进程结束后回调函数
-    function regUserShutdownCallback($func){
-        $this->_userShutdownCallback = $func;
-    }
-
     function execUserShutdownCallback(){
         if($this->_userShutdownCallback){
+            $this->out("  execUserShutdownCallback");
             call_user_func($this->_userShutdownCallback);
+        }else{
+            $this->out(" no exec user shutdown");
         }
     }
 
     function regSignals(){
         $self = $this;
-        $this->_timeOutCallback = function () use($self){
+        $this->_timeOutCallback = function () {
+            $this->out("oh no~my name is nightmare ,exec time out! start shutdown process:");
             $this->execUserShutdownCallback();
             fopen($this->_pidPath,"w");
 
             if (extension_loaded('posix')) {
+                $this->out("posix_kill pid:".getmypid());
                 posix_kill(getmypid(), SIGKILL);
             }
-            exit("529");
+            exit(" ok 529");
         };
 
         if($this->supportsPcntlSignals()){
 
             pcntl_async_signals(true);
-            pcntl_signal(SIGALRM, $this->_timeOutCallback);
-            pcntl_alarm($this->_userCallbackFuncExecTimeout);
 
             pcntl_signal(SIGTERM, function(){
-                $this->_nowStop = 1;
+                Log::info("receive system signal call:SIGTERM  ".time());
+//                $this->_timeOutCallback;
+                echo (" SIGTERM , no goods 1.\n");
+            });
+
+            pcntl_signal(SIGINT, function() {
+//                $this->_timeOutCallback;
+                Log::info("receive system signal call:SIGINT  ".time());
+                echo(" SIGINT  , no goods 2.\n");
             });
         }
     }
 
+    function setTimeoutSignal(){
+        $this->out("set timeout signal " . $this->_userCallbackFuncExecTimeout);
+        pcntl_signal(SIGALRM, $this->_timeOutCallback);
+        pcntl_alarm($this->_userCallbackFuncExecTimeout);
+    }
 
     //消费者 - 回调
     function subscribeCallback($msg,$userCallback,$exchange,$noAck){
@@ -471,16 +531,18 @@ class RabbitmqBase implements AmqpBaseInterface {
             call_user_func($userCallback,$body);
         }else{
             try{
-                $this->regSignals();
+                $this->setTimeoutSignal();
 
                 $this->out(" exec user callback function");
                 $rs = call_user_func($userCallback,$body);
 
-//                $info = " no info";
-//                if($rs){
-//                    $info = json_encode($info);
-//                }
-                $this->out(" user callback function return info:".$rs);
+                //注销
+                pcntl_alarm(0);
+                $info = "false";
+                if($rs){
+                    $info = "true";
+                }
+                $this->out(" user callback function return info:".$info);
                 if($rs){
                     $this->out(" return rabbitmq ack!");
                     $this->out(" loop for waiting msg...");
@@ -521,6 +583,7 @@ class RabbitmqBase implements AmqpBaseInterface {
         $self = $this;
         $this->out("set basic callback func ");
         $baseCallback = function($msg) use($userCallback,$self,$exchangeName,$noAck){
+            $this->out(__CLASS__ . " baseCallback");
             $self->subscribeCallback($msg,$userCallback,$exchangeName,$noAck);
             return true;
         };
@@ -530,17 +593,26 @@ class RabbitmqBase implements AmqpBaseInterface {
 
         $this->getChannel()->basic_consume($queueName,$consumerTag,false,$noAck,false,false,$baseCallback);
     }
+
+    function getOs(){
+        $os = strtoupper(substr(PHP_OS,0,3));
+        return $os;
+    }
+
     //消费者开启 守护 状态
     function startListenerWait(){
         $this->out(" start Listener Wait... ");
         $this->_startLoopDead = 1;
 
-        if(strtoupper(substr(PHP_OS,0,3))!=='WIN'){
+        if($this->getOs() !== "WIN"){
             if($this->supportsPcntlSignals()){
                 $fd = fopen($this->_pidPath,"w");
                 fwrite($fd,getmypid());
             }
         }
+
+//        var_dump();exit;
+        $this->regSignals();
 
         while (1){
             if($this->_consumerStopWait){
@@ -549,13 +621,13 @@ class RabbitmqBase implements AmqpBaseInterface {
                 break;
             }
 
-            if($this->_nowStop){
-                $this->cancelRabbitmqConsumer();
-                $this->_timeOutCallback;
-                break;
-            }
+//            if($this->_signalStopLoop){
+//                $this->cancelRabbitmqConsumer();
+//                $this->_timeOutCallback;
+//                exit("529");
+//            }
 
-            $this->getChannel()->wait(array("func a","func b"));
+            $this->getChannel()->wait();
         }
     }
 
@@ -564,9 +636,6 @@ class RabbitmqBase implements AmqpBaseInterface {
         $this->listenerCancel($this->_loopDeadCustomerTag);
     }
 
-    function setStopListenerWait($flag){
-        $this->_consumerStopWait = $flag;
-    }
 
     function listenerCancel($consumerTag){
         $this->getChannel()->basic_cancel($consumerTag);
@@ -578,21 +647,34 @@ class RabbitmqBase implements AmqpBaseInterface {
             return -1;
         }
         if($br){
+            $os = $this->getOs();
             if (preg_match("/cli/i", php_sapi_name())){
-                echo $msg . "\n";
+                if($os == "WIN"){
+                    $msg .= "\r\n";
+                }else{
+                    $msg .= "\n";
+                }
+
             }else{
-                echo $msg . "<br/>";
+                $msg .=  "<br/>";
             }
-        }else{
+        }
+
+        if($this->_debug == 1 ||  $this->_debug == 3){
             echo $msg;
         }
+
+        if($this->_debug == 2 ||  $this->_debug == 3){
+            Log::notice($msg);
+        }
+
+        return true;
     }
 
-    function supportsPcntlSignals()
-    {
+    function supportsPcntlSignals(){
         return extension_loaded('pcntl');
     }
-
+    //将rabbitmq push的消息属性值，解析成数组，删掉Header
     static function getReceiveAttr( $AMQPMessage){
         $attr = $AMQPMessage->get_properties();
         foreach ($attr as $k=>$v) {
@@ -604,7 +686,8 @@ class RabbitmqBase implements AmqpBaseInterface {
 
         return $attr;
     }
-
+    //将rabbitmq push的消息体，根据不同头类型，解析成不同类型。
+    //实际大部分是 将序列化的<字符串>转成obj
     static function getBody($AMQPMessage){
         $attr = self::getReceiveAttr($AMQPMessage);
         $body = $AMQPMessage->getBody();
@@ -625,7 +708,7 @@ class RabbitmqBase implements AmqpBaseInterface {
 
         return $body;
     }
-
+    //将rabbitmq push的消息属性值，解析成数组，只取Header
     static function getReceiveHeader(AMQPMessage $AMQPMessage){
         $header = $AMQPMessage->get("application_headers");
         $data = $header->getNativeData();

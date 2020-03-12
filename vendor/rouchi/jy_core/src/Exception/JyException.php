@@ -36,7 +36,7 @@ class JyException extends \ErrorException
                     //'line' => $e->getLine(),
                 ],
                 $e->getCode(),
-                $e->getMessage(),
+                $e->getMessage()
             );
 
             echo $result;

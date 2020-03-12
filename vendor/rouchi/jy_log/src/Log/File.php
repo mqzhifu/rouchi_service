@@ -211,11 +211,11 @@ class File extends Main {
 
         $info = $info . $this->_wrap;
 
-        if(!$this->_buffMem){
+//        if(!$this->_buffMem){
             $this->writeFile($filePath,$info);
-        }else{
-            $this->_buffContent[] = $info;
-        }
+//        }else{
+//            $this->_buffContent[] = $info;
+//        }
     }
     //检查设置路径正确否
     function checkBasePath(){

@@ -335,8 +335,8 @@ class RabbitmqBean extends \Jy\Common\MsgQueue\MsgQueue\RabbitmqBase{
         }
     }
     //一个consumer最多可同时接收rabbitmq 消费数
-    function setBasicQos(int $num){
-        $this->out("setBasicQos $num");
+    function setReceivedServerMsgMaxNumByOneTime(int $num){
+        $this->out("setReceivedServerMsgMaxNumByOneTime :  $num");
         $this->_consumerQos = $num;
         $this->getChannel()->basic_qos(null,$num,null);
     }
@@ -390,7 +390,7 @@ class RabbitmqBean extends \Jy\Common\MsgQueue\MsgQueue\RabbitmqBase{
         $callback = $this->_bean[$className];
         foreach ($callback as $k=>$v) {
 //            var_dump($v);
-            call_user_func($v,$body);
+            return call_user_func($v,$body);
         }
 
     }

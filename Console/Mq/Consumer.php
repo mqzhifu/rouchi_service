@@ -65,25 +65,28 @@ class ConsumerSms extends \Jy\Common\MsgQueue\MsgQueue\MessageQueue {
 
 
     function init(){
-        //        $PaymentBean = new PaymentBean();
-        $OrderBean = new OrderBean();
-        $UserBean = new UserBean();
+//        $PaymentBean = new PaymentBean();
 //        $SmsBean = new SmsBean();
 
+        $OrderBean = new OrderBean();
+        $UserBean = new UserBean();
+        $OrderBean->setRetryTime(array(2,5));
+//        $UserBean->setRetryTime(array(3,7,9));
 
-        $this->setDebug(2);
-
+        $this->setDebug(3);
         $queueName = "many.header.delay.order";
-        $this->setCustomTagName("my_test");
-        $this->setQueueName($queueName);
-        $this->setRetryTime(array(1,5,10));
-        //一次最大可接收rabbitmq消息数
-        $this->setUserCallbackFuncExecTimeout(10);
-        $this->setBasicQos(1);
-        $this->setQueueMessageDurable(true);//持久化
-        $this->setQueueAutoDel(false);//如果没有consumer rabbitmq 将自动 删除队列
+        $this->setCustomerQueueName($queueName);
         $this->setSubscribeBean(array($OrderBean,$UserBean));
         $this->subscribe();
+
+
+
+//        $this->setReceivedServerMsgMaxNumByOneTime(1);
+//        $this->setRetryTime(array(1,5,10));
+//        $this->setUserCallbackFuncExecTimeout(10);
+//        $this->setQueueMessageDurable(true);//持久化
+//        $this->setQueueAutoDel(false);//如果没有consumer rabbitmq 将自动 删除队列
+
     }
 
     function initBak(){
@@ -149,10 +152,7 @@ class ConsumerSms extends \Jy\Common\MsgQueue\MsgQueue\MessageQueue {
 //        var_dump($data);
 //        set_time_limit(10);
         echo "im order bean handle \n ";
-        //这里是，假设：发现数据不对，想将此条消息打回，有2种选择
-        //1   reject 配合requeue :true 不要再重试了，直接丢弃。  false:等待固定时间，想再重试一下
-        //2   直接抛出异常  ,框架会 给3次重试机会，如果还是一直失败，则抛弃
-//        echo "im dead loop where 1";
+        echo "im dead loop where 1";
 //        while(1){}
         return true;
     }
