@@ -11,12 +11,12 @@ class RabbitmqBean extends \Jy\Common\MsgQueue\MsgQueue\RabbitmqBase{
     private $_childClassName = "";
     //每个consumer最大同时可处理消息数
     private $_consumerQos = 0;
-    private $_defaultConsumerQos = 5;
+    private $_defaultConsumerQos = 1;
     //生产者，注册 ACK 回调函数-集合
     private $_userBeanAckCallback = array();
     //生产者，注册 N-ACK 回调函数-集合
     private $_userBeanNAckCallback = array();
-
+    private $_userBeanClassCollection = [];
     function __construct($conf ,$debug = 0  ){
         if(!$conf){
             $this->throwException(515);
@@ -362,6 +362,9 @@ class RabbitmqBean extends \Jy\Common\MsgQueue\MsgQueue\RabbitmqBase{
             $info = " $callbackClassName -> $callbackClassMethod ()";
         }
 
+
+        $this->_userBeanClassCollection[] = $beanName;
+
         $this->out("setListenerBean className:$name  callbackInfo:" .$info );
 
         $this->_header[$name] = $name;
@@ -394,6 +397,25 @@ class RabbitmqBean extends \Jy\Common\MsgQueue\MsgQueue\RabbitmqBase{
         }
 
     }
+
+    function getBeanRetry($bean){
+        $className = get_class($bean);
+        if(!$this->_userBeanClassCollection ){
+            $this->throwException(531);
+        }
+
+        foreach ($this->_userBeanClassCollection as $k=>$v) {
+            $userBeanClassName = get_class($v);
+            if($userBeanClassName == $className){
+                $retryTime = $v->getRetryTime();
+                return $retryTime;
+            }
+        }
+
+        return false;
+
+    }
+
     //消费者 开启 订阅 监听
     function subscribe($queueName, $consumerTag = "",$noAck = false){
         $this->out(" rabbitmqBean subscribe start: queueName:$queueName consumerTag:$consumerTag noAck:$noAck");

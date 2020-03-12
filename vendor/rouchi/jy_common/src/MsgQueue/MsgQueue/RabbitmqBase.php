@@ -68,6 +68,7 @@ class RabbitmqBase implements AmqpBaseInterface {
         528=>" timeout max 600",
         529=>"exec user program timeout ",
         530=>"message length > {0}",
+        531=>"userBeanClassCollection is null",
 
         600=>"NOT_FOUND - no exchange",
         601=>"PRECONDITION_FAILED - cannot switch from confirm to tx mode",
@@ -205,6 +206,10 @@ class RabbitmqBase implements AmqpBaseInterface {
 
     function setDebug($flag){
         $this->_debug =  $flag;
+    }
+
+    function setBasicQos(int $num){
+        $this->getChannel()->basic_qos(null,$num,null);
     }
 
     //进程结束后回调函数
@@ -412,13 +417,17 @@ class RabbitmqBase implements AmqpBaseInterface {
     }
     //重试机制
     function retry($attr,$body,$exchange,$msg){
-        $beanRetry = $body->getRetryTime();
+        $beanRetry = $this->getBeanRetry($body);
         if(!$beanRetry){
             $beanRetry = $this->getRetryTime();
             if(!$beanRetry){
                 $this->out(" no set retry");
                 return true;
+            }else{
+                $this->out(" used system defaultbeanRetry:".json_encode($beanRetry));
             }
+        }else{
+            $this->out(" used user diy beanRetry:".json_encode($beanRetry));
         }
 
         //重复-已发送次数
