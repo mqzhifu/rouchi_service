@@ -2,6 +2,7 @@
 namespace Jy\Common\MsgQueue\Facades;
 use Jy\Common\MsgQueue\MsgQueue\RabbitmqBean;
 use Jy\Facade\Config;
+use Jy\Log\Facades\Log;
 
 class MsgQueue {
     private $eProvide = "rabbitmq";
@@ -10,15 +11,19 @@ class MsgQueue {
 
 //    private static $sProvide = "rabbitmq";
 
-    public static function getInstance($provider = "rabbitmq",$debug = 0){
+    public static function getInstance($provider = "rabbitmq",$conf = []){
         if(self::$instance){
             return self::$instance;
         }
 
+        if(!$conf){
+            $conf = Config::get("rabbitmq",'rabbitmq');
+        }else{
+            Log::getInstance()->init('_path', "./log");
+        }
 
-        $conf = Config::get("rabbitmq",'rabbitmq');
         if(!$provider || $provider == 'rabbitmq'){
-            $self =  new  RabbitmqBean($conf,$debug);
+            $self =  new  RabbitmqBean($conf);
         }
 
         self::$instance = $self;

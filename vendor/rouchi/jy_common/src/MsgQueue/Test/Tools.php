@@ -1,6 +1,6 @@
 <?php
 namespace Jy\Common\MsgQueue\Test;
-include_once "config.php";
+include_once "testUnitConfig.php";
 
 //测试工具类
 
@@ -251,6 +251,8 @@ class Tools{
 
         return $config;
     }
+
+
 
     static function Capability(Lib $lib,$exchangeName,$routingKey,$max,$info){
         $stime=microtime(true);

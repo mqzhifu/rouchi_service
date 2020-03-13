@@ -1,10 +1,104 @@
 <?php
-//testCancelConsumer();
-//testDirectExchangeByMultiConsumer($lib);
-//测试性能，最简单的模式
-//function testCapabilitySimple(Lib $lib){
-//
-//}
+namespace Jy\Common\MsgQueue\Test;
+include "./../../../../../../vendor/autoload.php";
+
+use \Jy\Common\MsgQueue\MsgQueue\MessageQueue;
+
+use Jy\Common\MsgQueue\Test\Product\OrderBean;
+use Jy\Common\MsgQueue\Test\Product\UserBean;
+use Jy\Common\MsgQueue\Test\Product\SmsBean;
+
+$conf = include "config.php";
+
+class ConsumerManyBean extends  MessageQueue{
+    function __construct($conf = "")
+    {
+        parent::__construct("rabbitmq", $conf, 3);
+
+        $OrderBean = new OrderBean();
+//        $UserBean = new UserBean();
+
+        $OrderBean->setRetryTime(array(2, 5));
+        $this->setSubscribeBean(array($OrderBean));
+
+    }
+
+    function handleOrderBean($msg){
+        echo "im handleOrderBean\n";
+        var_dump($msg);
+    }
+}
+
+class ConsumerManyBean2 extends  MessageQueue{
+    function __construct($conf = "")
+    {
+        parent::__construct("rabbitmq", $conf, 3);
+
+//        $PaymentBean = new PaymentBean();
+//        $SmsBean = new SmsBean();
+
+        $OrderBean = new OrderBean();
+//        $UserBean = new UserBean();
+
+        $OrderBean->setRetryTime(array(2, 5));
+
+        $this->setDebug(3);
+        $this->setSubscribeBean(array($OrderBean));
+
+//        $queueName = "many.header.delay.order";
+//        $this->setCustomerQueueName($queueName);
+    }
+}
+
+
+//simple($conf);
+$ConsumerManyBean =  new ConsumerManyBean($conf);
+manyBean($ConsumerManyBean);
+
+
+
+
+
+function manyBean($ConsumerManyBean){
+    $ConsumerManyBean->subscribe();
+}
+
+
+function simple($conf){
+    //最简单的情况
+//    $SmsBean = new SmsBean($conf);
+//    $callback = function($msg){
+//        echo "im user callback by groupSubscribe! \n";
+//        var_dump($msg);
+//    };
+//    $SmsBean->groupSubscribe($callback);
+
+
+    //用户，暂时不想处理，走retry机制
+//    $SmsBean = new SmsBean($conf);
+//    $SmsBean->setRetryTime(array(5,10));
+//    $callback = function($msg){
+//        echo "im user callback by groupSubscribe! \n";
+//        throw new \Exception("tmp",901);
+//    };
+
+    //用户，觉得该消息有问题，直接丢弃掉
+//    $SmsBean = new SmsBean($conf);
+//    $SmsBean->setRetryTime(array(5,10));
+//    $callback = function($msg){
+//        echo "im user callback by groupSubscribe! \n";
+//        throw new \Exception("tmp",900);
+//    };
+
+    //运行时异常
+    $SmsBean = new SmsBean($conf);
+    $SmsBean->setRetryTime(array(5,10));
+    $callback = function($msg){
+        throw new \Exception("runtime err",9999);
+    };
+
+    $SmsBean->groupSubscribe($callback);
+}
 
 function testOneConsumer($lib){
     $lib->setBasicQos(1);

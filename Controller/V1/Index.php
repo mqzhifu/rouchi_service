@@ -37,14 +37,14 @@ class Index extends Controller
 
         $SmsBean->setDebug(3);
 
-//        $SmsBean->_msg = "aaa";
-//        $SmsBean->send();
-
+        $SmsBean->_msg = "aaa";
+        $SmsBean->send();
+        exit;
 
         $OrderBean->_id = 1;
         $OrderBean->_channel = 'baidu';
         $OrderBean->send();
-//        $OrderBean->sendDelay(10000);
+        $OrderBean->sendDelay(10000);
 
 
 //        $PaymentBean->_price = '100';

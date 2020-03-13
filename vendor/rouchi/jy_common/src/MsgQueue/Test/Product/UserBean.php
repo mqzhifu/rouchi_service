@@ -1,9 +1,8 @@
 <?php
 namespace Jy\Common\MsgQueue\Test\Product;
-
 use Jy\Common\MsgQueue\MsgQueue\MessageQueue;
 
-class ProductUserBean extends MessageQueue{
+class UserBean extends MessageQueue{
     public $_id = 1;
     public $_nickName = "";
     public $_realName = "";
@@ -22,11 +21,6 @@ class ProductUserBean extends MessageQueue{
         }catch (\Exception $e){
             $this->transactionCommit();
         }
-    }
-
-    function publishDelay($bean,$time){
-        $rabbitHeader = array('x-delay'=>$time);//1秒
-        $this->send( $bean ,null,$rabbitHeader);
     }
 
 }

@@ -2,7 +2,8 @@
 namespace Jy\Common\MsgQueue\MsgQueue;
 
 class RabbitmqBean extends \Jy\Common\MsgQueue\MsgQueue\RabbitmqBase{
-    private $_exchange = "many.header.delay";
+//    private $_exchange = "many.header.delay";
+    private $_exchange = "test.header.delay";
     private $_header = null;
     //一但设置了确认模式或者事务模式就不能再变更，这两种模式是互斥的
     private $_mode = 0;
@@ -17,29 +18,24 @@ class RabbitmqBean extends \Jy\Common\MsgQueue\MsgQueue\RabbitmqBase{
     //生产者，注册 N-ACK 回调函数-集合
     private $_userBeanNAckCallback = array();
     private $_userBeanClassCollection = [];
-    function __construct($conf ,$debug = 0  ){
+    function __construct($conf   ){
         if(!$conf){
             $this->throwException(515);
         }
         $this->checkConfigFormat($conf);
-
-        if($debug){
-            parent::setDebug($debug);
-        }
-
         parent::__construct($conf);
-        $this->init();
-
     }
 
     //初始化
     function init(){
+        $this->testENV();
         $this->initBase();
         $this->regDefaultAllCallback();
     }
     //基类就这一个实例化，但是 生产者  消费都 都 在用，且还要区分header
     //此方法，就是每次执行之前，需要 设置的  header 也就是child class name
     function _outInit($flag){
+//        $this->out("set flag:".$flag);
         $this->setClassFlag($flag);
         $this->setDefaultHeader();
 
@@ -207,9 +203,11 @@ class RabbitmqBean extends \Jy\Common\MsgQueue\MsgQueue\RabbitmqBase{
     }
     //用户注册ACK回调
     function regUserCallbackAck($callback){
+        $this->out("regUserCallbackAck");
         $this->_userBeanAckCallback[$this->_childClassName] = $callback;
     }
     function regUserCallBackNAck($callback){
+        $this->out("regUserCallBackNAck");
         $this->_userBeanNAckCallback[$this->_childClassName] = $callback;
     }
     //用户注册N-ACK回调
@@ -275,7 +273,7 @@ class RabbitmqBean extends \Jy\Common\MsgQueue\MsgQueue\RabbitmqBase{
                 if(isset($attr['header']) && $attr['header']){
                     foreach ($attr['header'] as $k=>$v) {
                         if($k  == 'x-delay'){
-                            $this->out(" delayed plugin compatible");
+                            $this->out(" delayed plugin no ack ,but return notice ");
 //                            $clientAck($AMQPMessage);
                             return true;
                         }
@@ -401,7 +399,7 @@ class RabbitmqBean extends \Jy\Common\MsgQueue\MsgQueue\RabbitmqBase{
     function getBeanRetry($bean){
         $className = get_class($bean);
         if(!$this->_userBeanClassCollection ){
-            $this->throwException(531);
+            return false;
         }
 
         foreach ($this->_userBeanClassCollection as $k=>$v) {
