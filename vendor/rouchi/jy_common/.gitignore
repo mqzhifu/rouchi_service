@@ -1,3 +1,5 @@
 /.idea
 /vendor
 composer.lock
+/src/MsgQueue/Test/Log/*
+/src/MsgQueue/Test/config.php
