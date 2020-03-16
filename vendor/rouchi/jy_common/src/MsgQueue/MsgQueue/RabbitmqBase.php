@@ -10,7 +10,7 @@ use Jy\Log\Facades\Log;
 
 class RabbitmqBase implements AmqpBaseInterface {
     //调试模式,0:关闭，1：只输出到屏幕 2：只记日志 3：输出到屏幕并记日志
-    private $_debug = 0;//注：开启 日志模式，记得引入log包
+    protected $_debug = 0;//注：开启 日志模式，记得引入log包
     private $_conn = null;//SOCK FD
     private $_channel = null;//channel
 //    private $_conf =['host' => '127.0.0.1', 'port' => 5672, 'user' => 'root', 'pwd' => 'root', 'vhost' => '/',];
@@ -89,6 +89,7 @@ class RabbitmqBase implements AmqpBaseInterface {
 
 
     function __construct($conf){
+        $this->checkConfigFormat($conf);
         $this->_conf = $conf;
     }
 
@@ -101,24 +102,32 @@ class RabbitmqBase implements AmqpBaseInterface {
         $os = $this->getOs();
         $this->out("os:".$os);
         if($os === "WIN"){
-            $this->out("notice:  linux os is very good.");
+            $this->out("notice:  linux OS is very good.");
         }
 
         if(!$this->supportsPcntlSignals()){
-            $this->out("notice : php ext:pcntl ,not supports");
+            $this->out("notice : php ext:pcntl ,not supports. OS signal will be lose...");
         }
 
         if(!extension_loaded('posix')){
-            $this->out("notice :php ext: posix ,not supports");
+            $this->out("notice :php ext: posix ,not supports. kill process is unknow");
         }
 
+        if(!$this->is_cli()){
+            $this->out("warning : exec env not CLI ,please set_time_limit(0) | max_execution_time(0)  if  u r  consumer");
+        }
+
+        if(ini_get("max_execution_time")){
+            $this->out("warning : please set max_execution_time = 0 ");
+        }
 
 //        if(class_exists("Jy\Log\Facades\Log")){
 //            $this->out("notice : depend on :Log composer bag");
 //        }
-//        if(extension_loaded("mbstring")){
-//            $this->out("notice : mbstring ext not supports");
-//        }
+    }
+
+    function is_cli(){
+        return preg_match("/cli/i", php_sapi_name()) ? true : false;
     }
 
     function getConn(){
@@ -158,12 +167,8 @@ class RabbitmqBase implements AmqpBaseInterface {
         $this->_conn = $conn;
         return $this->_conn;
     }
-
-    function checkConfigFormat($config = null ){
-        if(!$config){
-            $config = $this->_conf;
-        }
-
+    //检查配置文件格式是否正确
+    function checkConfigFormat($config ){
         foreach ( $this->_confKey as $k=>$v) {
             $f = 0;
             foreach ($config as $k2=>$v2) {
@@ -272,6 +277,10 @@ class RabbitmqBase implements AmqpBaseInterface {
 
     function getRetryTime(){
         return $this->_retryTime;
+    }
+
+    function setMessageMaxLength(int $num){
+        $this->_messageMaxLength = $num;
     }
 
     function confirmSelectMode(){
@@ -417,7 +426,7 @@ class RabbitmqBase implements AmqpBaseInterface {
             $finalArguments = array_merge($finalArguments,$arguments);
         }
 
-        if( strlen($msgBody) >= $this->_messageMaxLength){
+        if( strlen($msgBody) / 1024 >= $this->_messageMaxLength){
             $this->throwException(530,array($this->_messageMaxLength . " kb "));
         }
 
@@ -436,20 +445,47 @@ class RabbitmqBase implements AmqpBaseInterface {
         $msg->delivery_info['channel']->basic_reject($msg->delivery_info['delivery_tag'], false);
     }
 
-    //重试机制
-    function retry($attr,$body,$exchange,$msg){
-        $beanRetry = $this->getBeanRetry($body);
+    function getRetryPolicy($body){
+        $this->out("get retry  policy");
+        $beanRetry = $body->getRetryTime();
+        if(!$beanRetry){
+            if($this->_subscribeType == 2){
+                $beanRetry = $this->getBeanRetry($body);
+                if($beanRetry){
+                    $this->out(" level 2: many bean diy set");
+                }
+            }else{
+                $beanRetry = $this->getGroupSubscribeRetryTime();
+                if($beanRetry){
+                    $this->out(" level 3: groupSubscribe diy set");
+                }
+            }
+        }else{
+            $this->out(" level 1 : msg has  ");
+        }
+
         if(!$beanRetry){
             $beanRetry = $this->getRetryTime();
             if(!$beanRetry){
                 $this->out(" no set retry");
-                return true;
+                return false;
             }else{
-                $this->out(" used system defaultbeanRetry:".json_encode($beanRetry));
+                $this->out("level 4 : used system default RabbitmqBase Retry:");
             }
-        }else{
-            $this->out(" used user diy beanRetry:".json_encode($beanRetry));
         }
+
+        return $beanRetry;
+    }
+
+
+    //重试机制
+    function retry($attr,$body,$exchange,$msg){
+        $beanRetry = $this->getRetryPolicy($body);
+        if(!$beanRetry){
+            return false;
+        }
+
+        $this->out(json_encode($beanRetry));
 
         //重复-已发送次数
         $retryCount = 0;
@@ -591,6 +627,7 @@ class RabbitmqBase implements AmqpBaseInterface {
                     }
                 }else{
                     $this->out("runtime err");
+                    $this->reject($msg);
                     //用户运行时错误
                 }
             }
@@ -604,6 +641,8 @@ class RabbitmqBase implements AmqpBaseInterface {
         if(!$consumerTag){
             $consumerTag = $queueName . time();
         }
+
+        $this->out(" Subscribe type:".$this->_subscribeType );
 
         $self = $this;
         $this->out("set basic callback func ");

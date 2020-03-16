@@ -2,27 +2,35 @@
 namespace Jy\Common\MsgQueue\MsgQueue;
 
 class RabbitmqBean extends \Jy\Common\MsgQueue\MsgQueue\RabbitmqBase{
-//    private $_exchange = "many.header.delay";
-    private $_exchange = "test.header.delay";
+    private $_exchange = "many.header.delay";
+//    private $_exchange = "test.header.delay";
     private $_header = null;
     //一但设置了确认模式或者事务模式就不能再变更，这两种模式是互斥的
     private $_mode = 0;
     private $_modeDesc = array(0=>'普通模式',1=>'确认模式',2=>'事务模式');
-    //业务类的名称，主要用于binding header exchange
+    //业务类的名称(ID标识)，主要用于 绑定header exchange ，做路由分发
     private $_childClassName = "";
     //每个consumer最大同时可处理消息数
     private $_consumerQos = 0;
+    //默认consumer最大同时可处理消息数
     private $_defaultConsumerQos = 1;
     //生产者，注册 ACK 回调函数-集合
     private $_userBeanAckCallback = array();
     //生产者，注册 N-ACK 回调函数-集合
     private $_userBeanNAckCallback = array();
+    //保存用户 监听的bean 实例化的 类
     private $_userBeanClassCollection = [];
-    function __construct($conf   ){
+    //以组 模式 开启监听，设置的 重试机制
+    private $_groupSubscribeRetryTime = [];
+    //consumer 类型
+    protected $_subscribeType = 0;
+    //consumer 类型描述
+    protected $_subscribeTypeDesc = array(1=>'直接bean类开启consumer,监听一个bean',2=>'同时监听多个bean');
+
+    function __construct( $conf ){
         if(!$conf){
             $this->throwException(515);
         }
-        $this->checkConfigFormat($conf);
         parent::__construct($conf);
     }
 
@@ -289,8 +297,13 @@ class RabbitmqBean extends \Jy\Common\MsgQueue\MsgQueue\RabbitmqBase{
         $this->getChannel()->set_nack_handler($clientNAck);
         $this->getChannel()->set_ack_handler($clientAck);
     }
+
+    function getGroupSubscribeRetryTime(){
+        return $this->_groupSubscribeRetryTime;
+    }
+
     //开启 - 消费者 - 监听
-    function groupSubscribe($userCallback,$consumerTag = "",$autoDel = false,$durable = true,$noAck =false){
+    function groupSubscribe($userCallback,$consumerTag = "",$autoDel = false,$durable = true,$noAck =false,$retry = []){
         $this->out("start groupSubscribe consumerTag:$consumerTag");
         if(!$consumerTag){
             $this->throwException(508);
@@ -305,6 +318,10 @@ class RabbitmqBean extends \Jy\Common\MsgQueue\MsgQueue\RabbitmqBase{
         if(!$this->_consumerQos){
             $this->setBasicQos($this->_defaultConsumerQos);
         }
+
+        $this->_subscribeType = 1;
+
+        $this->_groupSubscribeRetryTime = $retry;
 
         $this->setBindQueue($queueName,$this->_exchange,null,$this->_header);
         $this->baseSubscribe($this->_exchange,$queueName,$consumerTag,$userCallback,$noAck);
@@ -431,6 +448,9 @@ class RabbitmqBean extends \Jy\Common\MsgQueue\MsgQueue\RabbitmqBase{
         if(!$this->_consumerQos){
             $this->setBasicQos($this->_defaultConsumerQos);
         }
+
+
+        $this->_subscribeType = 2;
 
         $this->baseSubscribe($this->_exchange,$queueName, $consumerTag, $consumerCallback,$noAck);
         $this->startListenerWait();

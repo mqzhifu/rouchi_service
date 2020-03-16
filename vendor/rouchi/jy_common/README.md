@@ -139,27 +139,30 @@ $data = array(
 
 Valid::match($data,$rule);
 ```
-  
-
-
-  
-
-
-
-  
-
-
-
-
-
-
 
 rabbitMq 队列
 ============
-注意：依赖 "php-amqplib/php-amqplib": composer update  
-具体代码逻辑 可参考TEST目录下的client.php server.php  
-最好在本地安装个rabbitmq，自带可视化工具，方便测试  
+准备工作：
+>依赖包 依赖 "php-amqplib/php-amqplib" &&  rouchi/Jy_config" composer update  
+>配置文件：需要提前写好，config 包 会调用 ,DEMO如下：  
+```javascript
+rabbitmq.php
 
+return [
+    'rabbitmq'=>[
+        'host' => '127.0.0.1',
+        'port' => 5672,
+        'user' => 'root',
+        'pwd' => 'root',
+        'vhost' => '/',
+    ]
+] ;
+
+
+```
+
+具体代码逻辑 可参考TEST目录下的client.php server.php  
+建议：在本地安装个rabbitmq，自带可视化工具，方便测试  
 
 角色描述
 --------------
@@ -167,21 +170,19 @@ product:生产者，用于定义消息内容，及发送消息
 consumer:消费者，拿到生产者的消费，进行逻辑处理。  
 rabbitmq-server:接收 product 发送的消息 , push 给consumer  
 
-
 生产者-基础流程
 --------------
-1. 先定义一个生产类(如：ProductSms)，只需要继承一个基类(MessageQueue)即可（类名随意）
+1. 先定义一个生产类(如：OrderBean)，只需要继承一个基类(MessageQueue)即可（类名随意）
 ```java
+
 use Jy\Common\MsgQueue\MsgQueue\MessageQueue;
-class ProductSms extens MessageQueue{
-    ..doing something..
-}
-```
-2. 再定义一个通信协议（get/set）类
->注：此类名由之前定义的类名+Bean结尾，如：上面定义的类名为ProductSms ,那就是ProductSms+Bean  
->切记：必须按照此规则，否则程序报错。
-```java
-class ProductSmsBean{
+class OrderBean extens MessageQueue{
+    public $_id = 1;
+    public $_channel = "";//来源渠道
+    public $_price = 0.00;//金额
+    public $_num = 0;//购买数量
+    public $_uid = 0;//用户ID
+    
     ..doing something..
 }
 ```
@@ -189,106 +190,153 @@ class ProductSmsBean{
 
 3. 初始化要发送的数据(使用刚刚定义好的bean类)
 ```javascript
-$ProductSmsBean = new ProductSmsBean();
-$ProductSmsBean->_id = 1;
-$ProductSmsBean->_msg = "is finish.";
-$ProductSmsBean->_type = "order";
+
+$OrderBean = new OrderBean();
+$OrderBean->_id = 1;
+$OrderBean->_channel = "tencent.";
+$OrderBean->_price = "1.12";
+
 ```
 
 4. 发送一条普通的消息
 ```javascript
-$productSms = new ProductSms();
-$productSms->send($ProductSmsBean);
+$OrderBean->send();
 ```
 
 5. 发送一条延迟5秒的消息
 ```java
-$arguments = array("expiration"=>5000);
-$productSms->send($ProductSmsBean,$arguments);
+//时间单位：微秒
+$OrderBean->sendDelay(5000);
 ```
-
+>注：最小值为1000，也就是1秒;最大值为7天。
 >最简单的demo,即完成了.
 
-
-#消息参数
-
-参数名  | 说明  |
- ---- | ----- |
- expiration | 失效时间 |
-content_type | MIME类型  | 
-content_encoding | 传输格式 | 
-Priority | 权限值 | 
-correlation_id | 相互关联ID | 
-application_headers | 头信息 | 
-message_id | 扩展字段 | 
-Timestamp | 时间 | 
-Type | 扩展字段 | 
-user_id | 扩展字段 | 
-app_id | 扩展字段 | 
-cluster_id | 扩展字段 | 
-reply_to | 消息被发送者处理完后,返回回复时执行的回调(在rpc时会用到) | 
-
->消息参数除了日常的，还有很多扩展字段可以用上。比如：message_id用于可靠性。type:可以用做分类给consumer用.  
->其中 message_id type Timestamp 基类已占用 ，send的时候，由基类自动生成   
-
-
-
-消费者-基础流程
---------------
-1. 快速开启一个consumer ,监听一个event
-2. 定义方式 开启一个consumer. 监听多个event
-
-
-快速开启consumer 监听某一个事件队列  
+#如果担心，服务器丢失生产者发送的消息，可使用<确认模式>
 ```java
+class OrderBean extends MessageQueue{
+    public $_id = 1;
+    public $_price = "";
 
-$productSms = new ProductSms();
-$userCallback = function ($recall){
-    echo "im in user callback func \n";
-};
-$productSms->groupSubscribe($userCallback,"dept_A");
+    function __construct(){
+        parent::__construct();
+        $this->setMode(1);
+        $this->regUserCallbackAck(array($this,'ackHandle'));
+    }
+
+    function ackHandle($data){
+        echo "OrderBean receive rabbitmq server callback ack info. end<br/>";
+    }
+}
 
 ```
+>$this->setMode(1);  开启确认模式  
+>regUserCallbackAck; 注册，回调函数
 
-1. 先要找到你关心的消息类（event），也就是生产者定义的bean
-2. 设定标识，dept_A ，这是个标识即队列名(event name)，如果存在~ok。如不存在 就会新建一个队列，接收product消息  
->也就是说：创建队列/选择队列 ，绑定队列 这些基操作 已由基类帮你完成。  
+
+
+
+>消息参数除了日常的，还有头部信息：上面有很多扩展字段可以用上。比如：message_id用于可靠性。  
+>像： message_id type Timestamp 基类已占用 ，send的时候，由基类自动生成   
+
+#消费者-简单开启
+$OrderBean->groupSubscribe($userCallback,"dept_A");
+>最简单一的一个消费者  进程 已开启.
+>dept_A:是consumerId ，唯一标识，如果是第一次使用，类会帮助你完成：队列创建、绑定等工作  
 >业务人员可随意使用，随意创建  
+>如果相同 的consumerId ,开启了多个，类似nginx的负载均衡，每个consumer都会hash到一条消息  
 
-定义方式 开启一个consumer. 监听多个event
+#消费者 开启一个consumer. 监听多个event
 ```javascript
+```java
+
+class HandleUserBean{
+    function process($data){
+//        var_dump($data['body']);
+        echo "im in HandleUserBean method: process \n ";
+        //也可以自定义返回  ACK
+        return array("return"=>"ack");
+    }
+}
+
+class HandleUserSmsBean{
+    function doing($data){
+//        var_dump($data['body']);
+        echo "im in HandleUserSmsBean method: doing \n ";
+        //也可以自定义返回  ACK
+        return array("return"=>"ack");
+    }
+}
+
+
 class ConsumerSms extends MessageQueue{
     function __construct()
     {
+    function __construct(){
         parent::__construct();
     }
 
     function init(){
         $queueName = "test.header.delay.sms";
+        $queueName = "test.header.delay.user";
 
+        //一次最大可接收rabbitmq消息数
         $this->setBasicQos(1);
 //        $durable = true;$autoDel = false;
 //        $this->createQueue();
+        $durable = true;//持久化
+        $autoDel = false;//如果没有consumer 消费将自动 删除队列
+        $this->createQueue($queueName,null,$durable,$autoDel);
 
         $ProductSmsBean = new ProductSmsBean();
         $handleSmsBean = array($this,'handleSmsBean');
         $this->setListenerBean($ProductSmsBean->getBeanName(),$handleSmsBean);
+        $this->setListenerBean($ProductSmsBean,$handleSmsBean);
+        //======================================================
+
 
         $ProductUserBean = new ProductUserBean();
         $handleUserBean = array($this,'handleUserBean');
         $this->setListenerBean($ProductUserBean->getBeanName(),$handleUserBean);
 
+        $HandleUserBeanClass =  new HandleUserBean();
+        $handleUserBean = array($HandleUserBeanClass,'process');
+        $this->setListenerBean($ProductUserBean,$handleUserBean);
+
+
+        $HandleUserSmsBean =  new HandleUserSmsBean();
+        $handleUserBean = array($HandleUserSmsBean,'doing');
+        $this->setListenerBean($ProductUserBean,$handleUserBean);
+
+        //=================================================
+        $ProductUserBean = new ProductOrderBean();
+        $handleUserBean = array($this,'handleOrderBean');
+        $this->setListenerBean($ProductUserBean,$handleUserBean);
+
         $this->subscribe($queueName,null);
     }
 
     function handleSmsBean($data){
+        var_dump($data['body']);
         echo "im sms bean handle \n ";
+        //什么都不返回，默认情况，框架会自动 ACK
     }
 
     function handleUserBean($data){
+        var_dump($data['body']);
         echo "im user bean handle \n ";
+        //也可以自定义返回  ACK
+        return array("return"=>"ack");
+    }
+
+    function handleOrderBean($data){
+        var_dump($data['body']);
+        echo "im order bean handle \n ";
+        //这里是，假设：发现数据不对，想将此条消息打回，有2种选择
+        //1   reject 配合requeue :true 不要再重试了，直接丢弃。  false:等待固定时间，想再重试一下
+        //2   直接抛出异常  ,框架会 给3次重试机会，如果还是一直失败，则抛弃
         return array("return"=>"reject",'requeue'=>false);
     }
+
 }
 ```
 1. 定义一个新类(ConsumerSms)，继承基类(MessageQueue)
@@ -296,8 +344,14 @@ class ConsumerSms extends MessageQueue{
 3. 将N个bean 绑定到基类上，并设置回调处理函数  ( setListenerBean 方法 )
 4. 启动订阅
 
+$lib = new ConsumerSms();
+$lib->init();
 
-
+```
+1. 定义一个新类(ConsumerSms)，继承基类(MessageQueue)  
+2. 找到你关心的消息类（event），也就是生产者定义的bean  
+3. 将N个bean 绑定到基类上，并设置回调处理函数  ( setListenerBean 方法 )。了个bean也可以同时绑定多个handle  
+4. 启动订阅  
 
 
 #编程模式
@@ -356,3 +410,4 @@ class ConsumerSms extends MessageQueue{
 
 #异常错误码
 >参照 rabbitmqBean 基类里的 描述文件  
+

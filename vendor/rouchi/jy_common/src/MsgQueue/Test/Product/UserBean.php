@@ -9,8 +9,8 @@ class UserBean extends MessageQueue{
     public $_regTime = 0;
     public $_birthday = 0;
 
-    function __construct($connectConf = null){
-        parent::__construct($connectConf);
+    function __construct($conf = null,$provinder = 'rabbitmq'){
+        parent::__construct($provinder,$conf,3);
     }
 
     function publishTx($bean){

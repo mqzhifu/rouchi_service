@@ -131,6 +131,11 @@ class File extends Main {
 //        $this->_writePath .=  "/".$category;
         $this->checkPathAndMkdir();
     }
+
+    function getPath(){
+        return $this->_path;
+    }
+
     //在基目录下，新建一个文件，记录所有类型的日志，可以看成是一个：总日志文件
     function totalRecord($info){
         if(!$this->_totalRecord)

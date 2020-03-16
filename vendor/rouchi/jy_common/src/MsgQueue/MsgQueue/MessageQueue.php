@@ -10,13 +10,14 @@ abstract class MessageQueue{
     private $_queueMessageDurable = true;//队列-消息是否持久化
     private $_customBindBean = [];
     private $_retry = null;//重试机制
+    private $_topicName = "";
 
     function __construct($provide = "",$conf = null,$debugFlag = 0){
         //子类名，即：传输协议标识ID
         $this->_flag = get_called_class();
-        MsgQueue::getInstance($provide,$conf);
+        MsgQueue::getInstance($provide,$conf,$debugFlag);
         MsgQueue::setDebug($debugFlag);
-        MsgQueue::init();
+//        MsgQueue::init();
         MsgQueue::_outInit($this->_flag);
 
     }
@@ -29,6 +30,10 @@ abstract class MessageQueue{
     //也可以不设置，父类里有默认值
     function setRetryTime(array $retry){
         $this->_retry = $retry;
+    }
+
+    function setTopicName($topicName ){
+        return MsgQueue::getInstance()->setTopicName($topicName);
     }
 
     function getRetryTime(){
@@ -91,7 +96,12 @@ abstract class MessageQueue{
             $header[$v] = $v;
         }
 
-        MsgQueue::getInstance()->bindQueue($queueName,MsgQueue::getInstance()->getTopicName(),null,$header);
+        $topicName = $this->_topicName;
+        if(!$topicName){
+            $topicName = MsgQueue::getInstance()->getTopicName();
+        }
+
+        MsgQueue::getInstance()->bindQueue($queueName,$topicName,null,$header);
         MsgQueue::getInstance()->subscribe($queueName,$consumerName);
     }
 
@@ -128,7 +138,7 @@ abstract class MessageQueue{
         if(!$consumerTag){
             $consumerTag = $this->_flag;
         }
-        return MsgQueue::_outInit($this->_flag)->groupSubscribe($userCallback,$consumerTag ,false ,$durable ,$noAck);
+        return MsgQueue::_outInit($this->_flag)->groupSubscribe($userCallback,$consumerTag ,false ,$durable ,$noAck,$this->_retry);
     }
     //一个consumer监听多个bean
     function setListenerBean($beanName,$callback){
@@ -158,27 +168,33 @@ abstract class MessageQueue{
 
     }
 
+    function setMessageMaxLength(int $num){
+        MsgQueue::getInstance()->setMessageMaxLength($num);
+    }
+
     //给单元测试工具类使用
     function getProvider(){
         return MsgQueue::getInstance();
     }
 
+
+
 //    private $_queueAutoDel = true;//当没有consumer时，会自动 删除队列
 //    function setQueueAutoDel(bool $flag){
 //        $this->_queueAutoDel = $flag;
 //    }
-//    //开启一个事务
-//    function  transactionStart(){
-//        return MsgQueue::transactionStart();
-//    }
-//    //提交一个事务
-//    function  transactionCommit(){
-//        return MsgQueue::transactionCommit();
-//    }
-//    //回滚一个
-//    function  transactionRollback(){
-//        return MsgQueue::transactionRollback();
-//    }
+    //开启一个事务
+    function  transactionStart(){
+        return MsgQueue::transactionStart();
+    }
+    //提交一个事务
+    function  transactionCommit(){
+        return MsgQueue::transactionCommit();
+    }
+    //回滚一个
+    function  transactionRollback(){
+        return MsgQueue::transactionRollback();
+    }
 
 
 }
