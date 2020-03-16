@@ -27,9 +27,6 @@ class Response
 
     public function json(array $userData, $code = 200, $msg = "success")
     {
-        RequestContext::put('sys_data.error_code', $code);
-        RequestContext::put('sys_data.duration', microtime(true) - RequestContext::get('sys_data.start_time'));
-
         // fpm  json
         // rpc stream   pack
 

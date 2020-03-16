@@ -87,7 +87,7 @@ abstract class Main  implements MainInterface, PsrLoggerInterface {
 
     function formatMsg($message ,array $context = array(),$level = ""){
         if(!$message){
-            throw new \Exception("message is null.");
+            return '';
         }
         if(is_object($message)){
             throw new \Exception("message is object.");
@@ -199,8 +199,8 @@ abstract class Main  implements MainInterface, PsrLoggerInterface {
         foreach ($format as $k=>$rule){
             $rule = trim($rule);
             switch ($rule){
-                case 'message':
-                    $info['message'] = $message;
+                case 'context':
+                    $info['context'] = $message;
 //                case 'rid':
 //                    $info .= $this->makeRequestId() . $this->_delimiter;
 //                    break;

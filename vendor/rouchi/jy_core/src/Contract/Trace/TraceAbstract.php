@@ -27,7 +27,7 @@ abstract class TraceAbstract implements TraceInterface
 			'sr'		=> 0,
 			'ss'		=> 0,
 
-			'caller'	=> getAppName(),
+			'caller'	=> getJyAppName(),
 			'callee'	=> "",
 			'params'	=> "",
 			'result'	=> '',
@@ -60,7 +60,7 @@ abstract class TraceAbstract implements TraceInterface
 		}
 
 		$traceData['timestamp'] = microtime(true);
-		$traceData['caller'] = getAppName();
+		$traceData['caller'] = getJyAppName();
 		$traceData['callee'] = $to;
 		$traceData['params'] = $data;
 		$traceData['result'] = '';
@@ -112,7 +112,7 @@ abstract class TraceAbstract implements TraceInterface
 		$traceData['timestamp'] = microtime(true);
 		$traceData['params'] = RequestContext::get('request_data');
 		$traceData['ip'] = MachineHelper::getLocalIp();
-		$traceData['caller'] = getAppName();
+		$traceData['caller'] = getJyAppName();
 
 		RequestContext::put('trace_sr_data', $traceData);
 
@@ -121,19 +121,19 @@ abstract class TraceAbstract implements TraceInterface
 
     public static function getClientSendTrace():array
     {
-    	return RequestContext::get('trace_cs_data'); // currency
+    	return RequestContext::get('trace_cs_data', []); // currency
     }
     public static function getClientReceiveTrace():array
     {
-    	return RequestContext::get('trace_cr_data'); // currency
+    	return RequestContext::get('trace_cr_data', []); // currency
     }
 
     public static function getServiceSendTrace():array
     {
-    	return RequestContext::get('trace_ss_data');
+    	return RequestContext::get('trace_ss_data', []);
     }
     public static function getServiceReceiveTrace():array
     {
-    	return RequestContext::get('trace_sr_data');
+    	return RequestContext::get('trace_sr_data', []);
     }
 }

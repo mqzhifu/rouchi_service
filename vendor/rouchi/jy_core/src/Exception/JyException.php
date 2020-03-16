@@ -26,15 +26,16 @@ class JyException extends \ErrorException
             $fromType = $param['from'] ?? 'sys';
             unset($param['from']);
 
-            $result = \Jy\App::$app->response->json($ret['data'] ?? [],$ret['code'] ?? $param['type'],$ret['message'] ?? $param['message']);
+            $result = \Jy\App::$app->response->json($ret['data'] ?? (isDebug() ? $param : []),$ret['code'] ?? $param['type'],$ret['message'] ?? $param['message']);
             echo $result;
         } catch (\Throwable $e) {
 
             $result =  \Jy\App::$app->response->json(
-                [
-                    //'trace' => $e->getTrace(),
-                    //'line' => $e->getLine(),
-                ],
+                (isDebug() ? [
+                        'trace' => $e->getTrace(),
+                        'line' => $e->getLine(),
+                    ] : []
+                ),
                 $e->getCode(),
                 $e->getMessage()
             );
@@ -44,11 +45,7 @@ class JyException extends \ErrorException
 
         Log::error($this->getLogContent());
 
-        Trace::setServiceSendTrace($result->getData());
-
-        Log::buffFlushFile();
-
-        RequestContext::destroy();
+        \Jy\Event::trigger('JY.REQUEST.END', $result);
 
         exit();
     }

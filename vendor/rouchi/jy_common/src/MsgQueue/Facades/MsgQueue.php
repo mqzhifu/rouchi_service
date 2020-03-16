@@ -21,10 +21,6 @@ class MsgQueue {
             Log::getInstance()->init('_path', "./Log");
         }
 
-
-
-
-
         if(!$provider || $provider == 'rabbitmq'){
             $self =  new  RabbitmqBean($conf);
         }

@@ -1,115 +1,9 @@
 <?php
 namespace Jy\Common\MsgQueue\Test;
-include "./../../../../../../vendor/autoload.php";
-
-use Jy\Common\MsgQueue\Test\Product\OrderBean;
-use Jy\Common\MsgQueue\Test\Product\UserBean;
-use Jy\Common\MsgQueue\Test\Product\SmsBean;
-use Jy\Common\MsgQueue\Test\Product\PaymentBean;
-use Jy\Common\MsgQueue\Test\Product\LargerBean;
-
-use Jy\Common\MsgQueue\Test\ToolsUnit;
-use Jy\Common\Rabbitmq\Test\Consumer\Sms;
-use Mockery\Exception;
-
-//因为这是 <类包> 测试用例(独立于项目之外的方式)，我直接在文件里定义了配置文件
-//如果是项目里测试，会使用jy_config自动获取rouchi_config
-//线上 exchange 只有一个：many.header.delay
-$conf = include "config.php";
+use Jy\Common\MsgQueue\MsgQueue\RabbitmqBean;
 
 
-//测试使用,可忽略
-$ToolsUnit = new ToolsUnit($conf);
-//$ToolsUnit->clearAll();exit;
-//$ToolsUnit->createCaseAndDelOldCase(3);exit;
-
-
-
-//因为目前只有rabbitmq一种队列，它是erlang 纯(异步|全双工)编程模型，没有同步通知这个概念。即使你发了一条消息成功，再通过API调，也不一定是最新的结果。
-//测试的过程中，想验证结果的话，建议本地搭建一个rabbitmq-server，开启可视化
-
-
-
-$OrderBean = new OrderBean($conf);
-$SmsBean = new SmsBean($conf);
-$UserBean = new UserBean($conf);
-$PaymentBean = new PaymentBean($conf);
-$LargerBean =  new LargerBean($conf);
-
-//正式环境可忽略此行代码
-$OrderBean->setTopicName($exchangeName);
-
-
-
-//===================================如下是 测试用例======================================================
-
-//注：因为 下面 开始的模式不一样，有互斥，会报错。（下一版会考虑解决这个）
-
-simple($SmsBean);
-//simgpleDelay($UserBean);
-//ackModeCallback($OrderBean);
-//transaction($PaymentBean);
-
-exit;
-LargerBeanException($LargerBean);
-
-function simple(SmsBean $SmsBean){
-    $SmsBean->_type = "register";
-    $SmsBean->_id = 1;
-    $SmsBean->_msg = "注册成功";
-    $SmsBean->setRetryTime(array(3,9));
-    $SmsBean->send();
-    //发送成功的话，test.header.delay.sms 队列会多一条消息
-}
-
-function simgpleDelay(UserBean $user){
-    $user->_id = "123456";
-    $user->_regTime = time();
-    $user->_birthday = "20200101";
-    $user->_realName = "zhangsan";
-    $user->_nickName = "carssbor";
-
-    $user->sendDelay(5000);
-    //发送成功的话，5秒后，test.header.delay.sms 队列会多一条消息
-}
-
-function ackModeCallback(OrderBean $OrderBean){
-    $OrderBean->_id = 1;
-    $OrderBean->_price = 100;
-    $OrderBean->setMode(1);
-    //这里也可以用 类 ，不一定是匿名函数
-    //$msg 是刚刚自己发送的消息内容
-    $callback = function ($msg){
-        echo "im ack mode callback <br/>";
-        var_dump($msg);
-    };
-    $OrderBean->regUserCallbackAck($callback);
-    $OrderBean->send();
-}
-
-function LargerBeanException(LargerBean $largerBean){
-    $largerBean->setMessageMaxLength(10);
-    $largerBean->send();
-}
-
-function transaction(PaymentBean $PaymentBean){
-    $PaymentBean->_type = "3yuan_small_class";
-    $PaymentBean->_orderId = "abcdefg";
-    $PaymentBean->_id = 456;
-    try{
-        $PaymentBean->transactionStart();
-        $PaymentBean->send();
-        $PaymentBean->transactionCommit();
-    }catch (Exception $e){
-        $PaymentBean->transactionRollback();
-        var_dump($e->getMessage());exit;
-    }
-
-}
-
-exit;
-
-
+//include_once "./../../../vendor/autoload.php";
 //注意 SERVER返回ACK确认 回调函数
 //$lib->regAckCallback($clientAck);
 
@@ -130,7 +24,8 @@ exit;
 //testUnit(6);
 
 
-
+//clearAll();
+//testUnit(8);
 
 
 //$rabbit = new RabbitmqBean();
@@ -421,7 +316,40 @@ function testCapabilityTxMode(Lib $lib){
     //不忍直视
 }
 
-function getQueueInfo($conf,$queueName){
-    return ToolsUnit::apiCurlQueueInfo($conf['user'],$conf['pwd'],$conf['host'].":15672",'%2f',$queueName);
+function clearAll(){
+    $lib = \Jy\Common\MsgQueue\Facades\MsgQueue::getInstance();
+    $TestConfig = new \Jy\Common\MsgQueue\Test\Tools($lib);
+    $TestConfig->clearAll($lib);
+    exit;
 }
 
+
+function testUnit($pid,$isDel = 1){
+    $lib = \Jy\Common\MsgQueue\Facades\MsgQueue::getInstance();
+    $TestConfig = new \Jy\Common\MsgQueue\Test\Tools($lib);
+    $TestConfig->setProjectId($pid);
+
+    if($isDel){
+        $TestConfig->clearByProject($pid);
+        $lib->waitReturnListener();
+    }
+
+    $TestConfig->initProjectExchangeQueue($pid);
+    $lib->waitReturnListener();
+    exit;
+}
+
+function out($msg ,$br = 1){
+    if(is_object($msg) || is_array($msg)){
+        $msg = json_encode($msg);
+    }
+    if($br){
+        if (preg_match("/cli/i", php_sapi_name())){
+            echo $msg . "\n";
+        }else{
+            echo $msg . "<br/>";
+        }
+    }else{
+        echo $msg;
+    }
+}

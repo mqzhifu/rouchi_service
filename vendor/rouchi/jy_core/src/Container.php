@@ -16,7 +16,6 @@ class Container
     {
 
         if (isset($this->_singletons[$name])) {
-            Log::info("Container: get class ".$name . " by singletons");
             return $this->_singletons[$name];
         }
 
@@ -29,12 +28,6 @@ class Container
             throw new \Exception('class '. $name .' not exists');
         }
 
-//        if (method_exists($className, 'getInstance')) {
-//            $single = $className::getInstance();
-//        } else {
-//            $single = new $className();
-//        }
-        Log::info("Container: get class ".$name . " by DI");
         $single = \Jy\Di::getInstance()->getClassInstance($className);
 
         $this->_singletons[$name] =  $single;
@@ -42,8 +35,7 @@ class Container
         return $single;
     }
 
-    //public function built($class, $param = [], $config = []){}
-    //public function set(){}
+
     public function has($class)
     {
         return isset($this->_singletons[$class]);

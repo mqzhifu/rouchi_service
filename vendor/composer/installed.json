@@ -79,25 +79,26 @@
     },
     {
         "name": "rouchi/jy_common",
-        "version": "v0.9.2",
-        "version_normalized": "0.9.2.0",
+        "version": "v0.12.1",
+        "version_normalized": "0.12.1.0",
         "source": {
             "type": "git",
             "url": "ssh://git@gitlab.rouchi.com:10022/php_sevice_group/jy_common.git",
-            "reference": "1371a771cc8232c8ca96a31ea249fa5e6e17edfe"
+            "reference": "d7078be7fedf00f7ebf5986278e2ce492680573b"
         },
         "dist": {
             "type": "tar",
-            "url": "http://packagist.rouchi.com/dist/rouchi/jy_common/rouchi-jy_common-v0.9.2-a2c014.tar",
-            "reference": "1371a771cc8232c8ca96a31ea249fa5e6e17edfe",
-            "shasum": "978ea928a82ada2f570a791b9d9f420a5d10fd4f"
+            "url": "http://packagist.rouchi.com/dist/rouchi/jy_common/rouchi-jy_common-v0.12.1-ee827e.tar",
+            "reference": "d7078be7fedf00f7ebf5986278e2ce492680573b",
+            "shasum": "9df8836f8b6e109cb5a221dff07cb4af50d1ce4e"
         },
         "require": {
             "php": "^7.2",
             "php-amqplib/php-amqplib": "2.8.0",
-            "rouchi/jy_config": "*"
+            "rouchi/jy_config": "*",
+            "rouchi/jy_log": "*"
         },
-        "time": "2020-02-27T08:05:42+00:00",
+        "time": "2020-03-16T10:37:07+00:00",
         "type": "component",
         "installation-source": "dist",
         "autoload": {
@@ -121,24 +122,24 @@
     },
     {
         "name": "rouchi/jy_config",
-        "version": "v0.3.0",
-        "version_normalized": "0.3.0.0",
+        "version": "v0.5.0",
+        "version_normalized": "0.5.0.0",
         "source": {
             "type": "git",
             "url": "ssh://git@gitlab.rouchi.com:10022/php_sevice_group/jy_config.git",
-            "reference": "17b3127d28e49ae0e38e84d801ffc690ba947c41"
+            "reference": "ca122a986c6223d76b5880ef7d0c84a52fe039a2"
         },
         "dist": {
             "type": "tar",
-            "url": "http://packagist.rouchi.com/dist/rouchi/jy_config/rouchi-jy_config-v0.3.0-823e12.tar",
-            "reference": "17b3127d28e49ae0e38e84d801ffc690ba947c41",
-            "shasum": "bbb45b1a220b708c680a25c2f091e5727aa1d06d"
+            "url": "http://packagist.rouchi.com/dist/rouchi/jy_config/rouchi-jy_config-v0.5.0-804988.tar",
+            "reference": "ca122a986c6223d76b5880ef7d0c84a52fe039a2",
+            "shasum": "8268e0df6122b167e8837e2e0332b5397cc2ed4c"
         },
         "require": {
             "php": "^7.2",
             "rouchi/jy_common": "*"
         },
-        "time": "2020-02-20T05:53:00+00:00",
+        "time": "2020-03-04T12:04:23+00:00",
         "type": "component",
         "installation-source": "dist",
         "autoload": {
@@ -159,24 +160,24 @@
     },
     {
         "name": "rouchi/jy_core",
-        "version": "v0.7.21",
-        "version_normalized": "0.7.21.0",
+        "version": "v0.11.0",
+        "version_normalized": "0.11.0.0",
         "source": {
             "type": "git",
             "url": "ssh://git@gitlab.rouchi.com:10022/php_sevice_group/jy_core.git",
-            "reference": "a82a0ee980b4383b2fa9185448b2481337f20ea1"
+            "reference": "25efa75c4e3d3a6226f78a94bcbac82797ed41d0"
         },
         "dist": {
             "type": "tar",
-            "url": "http://packagist.rouchi.com/dist/rouchi/jy_core/rouchi-jy_core-v0.7.21-faaf4f.tar",
-            "reference": "a82a0ee980b4383b2fa9185448b2481337f20ea1",
-            "shasum": "e6d7e1c30d4e03605aa9fcaaf5f3087b20c90e4f"
+            "url": "http://packagist.rouchi.com/dist/rouchi/jy_core/rouchi-jy_core-v0.11.0-f5fd37.tar",
+            "reference": "25efa75c4e3d3a6226f78a94bcbac82797ed41d0",
+            "shasum": "59c548df7eb130be73b72c538f04154a076100c1"
         },
         "require": {
             "php": "^7.2",
             "rouchi/jy_common": "*"
         },
-        "time": "2020-02-24T07:12:07+00:00",
+        "time": "2020-03-04T12:08:42+00:00",
         "type": "component",
         "installation-source": "dist",
         "autoload": {
@@ -197,23 +198,23 @@
     },
     {
         "name": "rouchi/jy_db",
-        "version": "v0.4.4",
-        "version_normalized": "0.4.4.0",
+        "version": "v0.6.0",
+        "version_normalized": "0.6.0.0",
         "source": {
             "type": "git",
             "url": "ssh://git@gitlab.rouchi.com:10022/php_sevice_group/jy_db.git",
-            "reference": "ba7347ba3997524a1d592f803f76d459eb615438"
+            "reference": "0ad10420b13492d1417f0794465e8d59c1046b35"
         },
         "dist": {
             "type": "tar",
-            "url": "http://packagist.rouchi.com/dist/rouchi/jy_db/rouchi-jy_db-v0.4.4-fd9117.tar",
-            "reference": "ba7347ba3997524a1d592f803f76d459eb615438",
-            "shasum": "7b38b8aa0b1a9e88b8298247611e78bd85b1eb7e"
+            "url": "http://packagist.rouchi.com/dist/rouchi/jy_db/rouchi-jy_db-v0.6.0-3f69e3.tar",
+            "reference": "0ad10420b13492d1417f0794465e8d59c1046b35",
+            "shasum": "894002b7d7062ec3a7bff6d67d12b66ce2e7a73c"
         },
         "require": {
             "php": "^7.2"
         },
-        "time": "2020-02-21T09:20:21+00:00",
+        "time": "2020-03-04T06:48:39+00:00",
         "type": "component",
         "installation-source": "dist",
         "autoload": {
@@ -234,20 +235,20 @@
     },
     {
         "name": "rouchi/jy_log",
-        "version": "v0.3.5",
-        "version_normalized": "0.3.5.0",
+        "version": "v0.5.0",
+        "version_normalized": "0.5.0.0",
         "source": {
             "type": "git",
             "url": "ssh://git@gitlab.rouchi.com:10022/php_sevice_group/jy_log.git",
-            "reference": "b77bb3b80c71bbae6f4c6f3a651c76cf6055fcd7"
+            "reference": "eb15dbbfbe4b292096e4b027d7168e5f8abf2358"
         },
         "dist": {
             "type": "tar",
-            "url": "http://packagist.rouchi.com/dist/rouchi/jy_log/rouchi-jy_log-v0.3.5-05f547.tar",
-            "reference": "b77bb3b80c71bbae6f4c6f3a651c76cf6055fcd7",
-            "shasum": "f8a4a6c83c0870783d237c00a1ae61eb63b115a3"
+            "url": "http://packagist.rouchi.com/dist/rouchi/jy_log/rouchi-jy_log-v0.5.0-0a4cd1.tar",
+            "reference": "eb15dbbfbe4b292096e4b027d7168e5f8abf2358",
+            "shasum": "ed0c28b50e9acca8f913e709e3dad9629fd24ee2"
         },
-        "time": "2020-02-24T08:26:29+00:00",
+        "time": "2020-03-04T12:06:08+00:00",
         "type": "library",
         "installation-source": "dist",
         "autoload": {
@@ -266,23 +267,23 @@
     },
     {
         "name": "rouchi/jy_redis",
-        "version": "v0.2.5",
-        "version_normalized": "0.2.5.0",
+        "version": "v0.4.0",
+        "version_normalized": "0.4.0.0",
         "source": {
             "type": "git",
             "url": "ssh://git@gitlab.rouchi.com:10022/php_sevice_group/jy_redis.git",
-            "reference": "6290127c6aadf8ef8c7250077ed1352d7a9315e1"
+            "reference": "15a6c5546f90e0a5b22dd338cfb219f49ec9f369"
         },
         "dist": {
             "type": "tar",
-            "url": "http://packagist.rouchi.com/dist/rouchi/jy_redis/rouchi-jy_redis-v0.2.5-2262e2.tar",
-            "reference": "6290127c6aadf8ef8c7250077ed1352d7a9315e1",
-            "shasum": "e19fffb5efdd84a5358d6a42c75ffbb106f9cfa7"
+            "url": "http://packagist.rouchi.com/dist/rouchi/jy_redis/rouchi-jy_redis-v0.4.0-62d52a.tar",
+            "reference": "15a6c5546f90e0a5b22dd338cfb219f49ec9f369",
+            "shasum": "51161650c24aa95eeee011342438a6e3e7441b41"
         },
         "require": {
             "php": "^7.2"
         },
-        "time": "2020-02-21T09:02:51+00:00",
+        "time": "2020-03-03T07:23:54+00:00",
         "type": "component",
         "installation-source": "dist",
         "autoload": {

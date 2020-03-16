@@ -14,6 +14,8 @@ class Request
         'X-Forwarded-For', // Common
     ];
 
+    private $tokenHeader = 'Service-Token';
+
     private function __construct()
     {
         //.
@@ -88,9 +90,9 @@ class Request
     {
         $data = [
             'request_id' => RequestContext::get('trace_sr_data.traceid', null),
-            'token' => RequestContext::get('trace_sr_data.traceid', null),
+            'token' => $this->getHeader($this->tokenHeader),
             'start_time' => RequestContext::get('trace_sr_data.timestamp', microtime(true)),
-            'project_name' => getAppName(),
+            'project_name' => getJyAppName(),
             'server_addr' => MachineHelper::getLocalIp(),
             'cip' => $this->getRemoteIP(),
             'url' => $this->getUrl(),
@@ -164,6 +166,16 @@ class Request
         }
 
         return $headers;
+    }
+
+    public function getHeader($h, $default = null)
+    {
+        return $this->getHeaders()[$h] ?? $default;
+    }
+
+    public function hasHeader($h)
+    {
+        return isset($this->getHeaders()[$h]);
     }
 
     public function getRemoteIP()

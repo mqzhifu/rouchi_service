@@ -9,40 +9,37 @@ use Jy\Facade\Trace;
 class Dispatcher
 {
 
-    private $router;
+    public static $protocolDirMap = [
+        'cli' => 'Console',
+        'http' => 'Controller',
+        'rpc' => 'Rpc'
+    ];
 
     public function __construct()
     {
-        $this->router = \Jy\App::$app->router;
     }
 
     public function dispatcher()
     {
-        // init event
-
         return $this->execute();
 
     }
 
     public function execute()
     {
-        //..
         $requests = \Jy\App::$app->request;
 
-        // .. hook
-        $result = $this->call($requests);
-        return $result;
+        return $this->call($requests);
     }
 
     private function call(Request $request)
     {
         $module = $request->getModule();
         $action = $request->getAction();
-        $args = $request->getArgs();
         $protocol = $request->getProtocol();
         $version = $request->getVersion();
 
-        $dir = $protocol == "cli" ? "Console" : "Controller";
+        $dir = static::$protocolDirMap[$protocol] ?? 'Console';
 
         $namespace = "Rouchi\\{$dir}" .
             "\\". ($version) . "\\" .
@@ -58,27 +55,17 @@ class Dispatcher
             throw new \Exception('action : '. $namespace .':'. $action .' not exists');
         }
 
-        Log::info("ctrl:$namespace, action:$action");
-        // heredoc
-        $annotation = \Jy\App::$app->reflect->resolveClass($namespace, $action, "method");
-        if($annotation && isset($annotation['valid']) && $annotation['valid']){
-            \Jy\Common\Valid\Facades\Valid::match(\Jy\App::$app->request->getArgs(),$annotation['valid']);
-        }
-
+        \Jy\Event::trigger('JY.ACTION.BEFORE', [
+            'namespace' => $namespace,
+            'action' => $action
+        ]);
 
         $para = \Jy\App::$app->di->initMethod($namespace,$action,$controller);
-        // hook
         $result = call_user_func_array([$controller, $action], $para ?? []);
-        // hook
 
         echo $result;
 
-        Trace::setServiceSendTrace(is_object($result) ? $result->getData() : ['none']);
-
-        Log::info("action end");
-        Log::buffFlushFile();
-
-        RequestContext::destroy();
+        \Jy\Event::trigger('JY.REQUEST.END', $result);
 
         exit();
     }

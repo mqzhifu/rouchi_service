@@ -17,57 +17,27 @@ class App
 
     public static function init()
     {
-        static::$app = new static();
-
         static::initException();
 
-        static::$container = new \Jy\Container();
 
-        static::$checkFramework = new \Jy\Util\CheckFramework();
-
-        // tracing
-        Trace::setServiceReceiveTrace();
-
-        // 上下文数据的初始化
-        static::initRequestContext();
         // 常量 配置 todo
         //...
     }
 
     public static function run()
     {
-        Log::info("APP start run...");
+        static::$app = new static();
+        static::$container = new \Jy\Container();
 
-        date_default_timezone_set('PRC');
-
-        RequestContext::create();
+        \Jy\Event::trigger('JY.INIT.BEFORE');
 
         static::init();
 
-        static::$checkFramework->check();
+        \Jy\Event::trigger('JY.INIT.AFTER');
+
 
         static::$app->dispatcher->dispatcher();
     }
-
-    public static function initRequestContext()
-    {
-
-        if (!RequestContext::isInSwooleCoroutine()) {
-            // data pre deal
-            RequestContext::put('request_user_data', \Jy\App::$app->request->getUserData());
-            RequestContext::put('request_data', \Jy\App::$app->request->getRequestParams());
-            RequestContext::put('sys_data', \Jy\App::$app->request->getRequestSysParams());
-            RequestContext::put('request_trace_cs_data', \Jy\App::$app->request->getRequestTraceParams());
-            RequestContext::put('request_header_data', \Jy\App::$app->request->getRequestHeaderParams());
-
-            unset($_GET);
-            unset($_POST);
-            unset($_REQUEST);
-            //unset($_SERVER);
-        }
-
-    }
-
     public function __get($class)
     {
         $namespace = "\\Jy\\" . ucfirst($class);

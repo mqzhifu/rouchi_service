@@ -9,10 +9,17 @@ class Db extends  DbAbstract
 {
 
     private $pdo = null;
+    private $config = [];
 
     public function __construct($config)
     {
-        $this->pdo = PDODriver::getInstance($config);
+        $this->config = $config;
+        $this->connect();
+    }
+
+    private function connect()
+    {
+        $this->pdo = PDODriver::getInstance($this->config);
     }
 
     /**
@@ -23,13 +30,42 @@ class Db extends  DbAbstract
      */
     public function __call($method, $params = array())
     {
-        return call_user_func_array(array($this->pdo, $method), $params);
+        $res = "";
+
+        try {
+            $res = call_user_func_array(array($this->pdo, $method), $params);
+
+            if (false === $res) {
+
+                if (!$this->isAlive()) {
+
+                    $this->connect($this->config);
+
+                    return call_user_func_array([$this->pdo, $method], $params);
+                }
+            }
+        } finally {
+            if (!is_null($this->pdo->errorInfo()[1])) throw new \Exception($this->pdo->errorInfo()[2], $this->pdo->errorInfo()[1]);
+        }
+
+        return $res;
     }
 
     public function update($sql, $param = [])
     {
         // sql check ...
         return $this->execute($sql, $param);
+    }
+
+    private function isAlive(): bool
+    {
+        $errorInfo = $this->pdo->errorInfo();
+
+        if (!is_null($errorInfo[1]) && ($errorInfo[1] != 2006 or $errorInfo[1] != 2013)) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -87,7 +123,7 @@ class Db extends  DbAbstract
             return 0;
         $temp = array();
         foreach ($param as $k => $v) {
-            $temp[] = $k.'="'.$v.'"';
+            $temp[] = $k.'='.$this->quote($v);
         }
         // 构建SQL
         $sql = sprintf('update `%s` set %s where id = %s',

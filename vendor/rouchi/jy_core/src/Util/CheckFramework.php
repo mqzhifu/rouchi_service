@@ -11,10 +11,10 @@ class CheckFramework{
         return $inc;
     }
     function checkExt(){
-        $arr = array('gd','curl','pdo','mbstring',"mysqli",'openssl');
+        $arr = array('gd','curl','pdo','mbstring',"mysqli",'openssl','redis');
         foreach ($arr as $k=>$v) {
             if(!extension_loaded($v)){
-                throw new \Exception(1100001,"check ext err: no include $v  . include list:". json_encode($arr));
+                throw new \Exception("check ext err: no include $v  . include list:". json_encode($arr),1100001);
             }
         }
         return true;
@@ -24,7 +24,7 @@ class CheckFramework{
         $constList = array('ROUCHI_ROOT_PATH','ROUCHI_CONF_PATH','ROUCHI_LOG_PATH','ROUCHI_APP_NAME');
         foreach ($constList as $k=>$v) {
             if(!defined($v)){
-                throw new \Exception(1100002,"check const err: no include $v  . include list:". json_encode($constList));
+                throw new \Exception("check const err: no include $v  . include list:". json_encode($constList),1100002);
             }
         }
 
@@ -34,7 +34,7 @@ class CheckFramework{
     function checkPHPVersion(){
         $version = substr(PHP_VERSION,0,3);
         if($version < "7.2"){
-            throw new \Exception(1100003,"PHP VERSION last:7.2.0");
+            throw new \Exception("PHP VERSION last:7.2.0",1100003);
         }
     }
 

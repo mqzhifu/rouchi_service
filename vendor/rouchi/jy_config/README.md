@@ -24,10 +24,11 @@
 
    # 配置文件的根目录为：ROUCHI_CONF_PATH
 
-   #1, 指定file和key
+   #1, 指定file和key和默认值:如果不存在，则返回指定的默认值。默认值默认为null
    Config::get(file, item); # item也可以指定深维度的数据， item.sub_item
-   Config::get('database', 'mysql.read.host');
+   Config::get('database', 'mysql.read.host', null);最后一个参数为默认值
 
    #2, 或者直接全部通过点号获取。但是需要加上@前缀
-   Config::get('@database.mysql.read.host');
+   Config::get('@database.mysql.read.host', null);最后一个参数为默认值
+   Config::get('@app.debug', false);最后一个参数为默认值
 ```

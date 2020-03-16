@@ -143,7 +143,9 @@ Valid::match($data,$rule);
 rabbitMq 队列
 ============
 准备工作：
->依赖包 依赖 "php-amqplib/php-amqplib" &&  rouchi/Jy_config" composer update  
+>依赖包 "php-amqplib/php-amqplib" &&  rouchi/Jy_config && rouchi/Jy_log" composer update  
+>消费者模式，开启进程，是属于守护进程，最好是CLI方式启动。且 max_execution_time set_time_limit 均为0  
+>消费者模式，建议使用非win系统，打开php 扩展：pcntl posix扩展.   
 >配置文件：需要提前写好，config 包 会调用 ,DEMO如下：  
 ```javascript
 rabbitmq.php
@@ -159,9 +161,11 @@ return [
 ] ;
 
 
-```
 
-具体代码逻辑 可参考TEST目录下的client.php server.php  
+```
+>如果是类库使用的话，实例 化类的时候，把配置信息直接 传入构造函数即可
+
+具体代码逻辑 可参考TEST目录下的product.php consumer.php manyConsumer.php  
 建议：在本地安装个rabbitmq，自带可视化工具，方便测试  
 
 角色描述
@@ -231,6 +235,7 @@ class OrderBean extends MessageQueue{
 ```
 >$this->setMode(1);  开启确认模式  
 >regUserCallbackAck; 注册，回调函数
+>注：模式之间有互斥情况，如 开启 确认模式 再开始事务模式 会出错
 
 
 
@@ -238,176 +243,149 @@ class OrderBean extends MessageQueue{
 >消息参数除了日常的，还有头部信息：上面有很多扩展字段可以用上。比如：message_id用于可靠性。  
 >像： message_id type Timestamp 基类已占用 ，send的时候，由基类自动生成   
 
-#消费者-简单开启
+消费者-简单开启
+----------------
 $OrderBean->groupSubscribe($userCallback,"dept_A");
 >最简单一的一个消费者  进程 已开启.
 >dept_A:是consumerId ，唯一标识，如果是第一次使用，类会帮助你完成：队列创建、绑定等工作  
 >业务人员可随意使用，随意创建  
 >如果相同 的consumerId ,开启了多个，类似nginx的负载均衡，每个consumer都会hash到一条消息  
 
-#消费者 开启一个consumer. 监听多个event
+消费者 开启一个consumer. 监听多个event
+-----------------------------------------
 ```javascript
-```java
-
-class HandleUserBean{
-    function process($data){
-//        var_dump($data['body']);
-        echo "im in HandleUserBean method: process \n ";
-        //也可以自定义返回  ACK
-        return array("return"=>"ack");
-    }
-}
-
-class HandleUserSmsBean{
-    function doing($data){
-//        var_dump($data['body']);
-        echo "im in HandleUserSmsBean method: doing \n ";
-        //也可以自定义返回  ACK
-        return array("return"=>"ack");
-    }
-}
-
-
-class ConsumerSms extends MessageQueue{
-    function __construct()
+class ConsumerManyBean extends  MessageQueue{
+    function __construct($conf = "")
     {
-    function __construct(){
-        parent::__construct();
+        parent::__construct("rabbitmq", $conf, 3);
+
+        $PaymentBean = new PaymentBean();
+        $OrderBean = new OrderBean();
+        $UserBean = new UserBean();
+
+        $PaymentBean->setRetryTime(array(2,4,6));
+
+        $this->setSubscribeBean(array($OrderBean,$PaymentBean,$UserBean));
+
     }
 
-    function init(){
-        $queueName = "test.header.delay.sms";
-        $queueName = "test.header.delay.user";
-
-        //一次最大可接收rabbitmq消息数
-        $this->setBasicQos(1);
-//        $durable = true;$autoDel = false;
-//        $this->createQueue();
-        $durable = true;//持久化
-        $autoDel = false;//如果没有consumer 消费将自动 删除队列
-        $this->createQueue($queueName,null,$durable,$autoDel);
-
-        $ProductSmsBean = new ProductSmsBean();
-        $handleSmsBean = array($this,'handleSmsBean');
-        $this->setListenerBean($ProductSmsBean->getBeanName(),$handleSmsBean);
-        $this->setListenerBean($ProductSmsBean,$handleSmsBean);
-        //======================================================
-
-
-        $ProductUserBean = new ProductUserBean();
-        $handleUserBean = array($this,'handleUserBean');
-        $this->setListenerBean($ProductUserBean->getBeanName(),$handleUserBean);
-
-        $HandleUserBeanClass =  new HandleUserBean();
-        $handleUserBean = array($HandleUserBeanClass,'process');
-        $this->setListenerBean($ProductUserBean,$handleUserBean);
-
-
-        $HandleUserSmsBean =  new HandleUserSmsBean();
-        $handleUserBean = array($HandleUserSmsBean,'doing');
-        $this->setListenerBean($ProductUserBean,$handleUserBean);
-
-        //=================================================
-        $ProductUserBean = new ProductOrderBean();
-        $handleUserBean = array($this,'handleOrderBean');
-        $this->setListenerBean($ProductUserBean,$handleUserBean);
-
-        $this->subscribe($queueName,null);
+    function handlePaymentBean($msg){
+        echo "im handlePaymentBean\n";
+        throw new \Exception("tmp", 901);
+        var_dump($msg);
     }
 
-    function handleSmsBean($data){
-        var_dump($data['body']);
-        echo "im sms bean handle \n ";
-        //什么都不返回，默认情况，框架会自动 ACK
+    function handleOrderBean($msg){
+        echo "im handleOrderBean\n";
+        throw new \Exception("tmp",900);
+        var_dump($msg);
     }
 
-    function handleUserBean($data){
-        var_dump($data['body']);
-        echo "im user bean handle \n ";
-        //也可以自定义返回  ACK
-        return array("return"=>"ack");
+    function handleUserBean($msg){
+        echo "im handleUserBean\n";
+        var_dump($msg);
     }
-
-    function handleOrderBean($data){
-        var_dump($data['body']);
-        echo "im order bean handle \n ";
-        //这里是，假设：发现数据不对，想将此条消息打回，有2种选择
-        //1   reject 配合requeue :true 不要再重试了，直接丢弃。  false:等待固定时间，想再重试一下
-        //2   直接抛出异常  ,框架会 给3次重试机会，如果还是一直失败，则抛弃
-        return array("return"=>"reject",'requeue'=>false);
-    }
-
 }
-```
-1. 定义一个新类(ConsumerSms)，继承基类(MessageQueue)
-2. 找到你关心的消息类（event），也就是生产者定义的bean
-3. 将N个bean 绑定到基类上，并设置回调处理函数  ( setListenerBean 方法 )
-4. 启动订阅
-
-$lib = new ConsumerSms();
-$lib->init();
-
 ```
 1. 定义一个新类(ConsumerSms)，继承基类(MessageQueue)  
 2. 找到你关心的消息类（event），也就是生产者定义的bean  
-3. 将N个bean 绑定到基类上，并设置回调处理函数  ( setListenerBean 方法 )。了个bean也可以同时绑定多个handle  
+3. 将N个bean 绑定 ( setListenerBean 方法 )到基类上，设置回调处理函数，handle+bean名称
 4. 启动订阅  
 
 
-#编程模式
+```java
+$ConsumerManyBean =  new ConsumerManyBean();
+ConsumerManyBean->subscribe();
+```
+
+>如上就启动了一个consumer 监听 3个bean的情况
+
+
+DEMO依然是最简单的，也可以添加复杂的东西
+>重试机制
+
+```javascript
+$SmsBean->setRetryTime(array(3,9));
+```
+>一共重试2次，第一次是3秒之后再重试，另一个是9秒之后再试一次
+
+
+用户态 - <返回/触发>机制
+-------------------------
+consumer在监听到product端发送过来的消息，会进入到用户自定义的callback函数中，此时用户可以有3种状态返回选择，均是以异常形势抛出  
+如果在用户态执行完callback函数后，没有抛出任何异常，类库默认认为此函数没有问题，自动ACK Server  
+>900:该数据错误，丢掉吧，不需要再处理了  
+>901:进入重试  
+>运行时异常：目前直接丢掉，后期会加入报警机制  
+
+
+
+编程模式
+-------------------
 >rabbitmq 是基于erlang模式，全并发模式(channel)。也就是全异步模式(基类里我规避了这种方式，但牺牲部分性能)  
 >大部分你的操作，比如：send 实际上并不是以同步方式拿到mq返回的值。  
 >很多业务都是基于callback function 方式，所以使用时请注意下.  
 
 
-#测试用例
->test目录下有 client.php server.php 简易测试用例，再参考该文档即可。
+测试用例
+-------------------
+>test目录下有 product.php consumer.php manyConsumer.php 简易测试用例，再参考该文档即可。  
 >最好在本地安装个rabbitmq，自带可视化工具，方便测试  
 
-#消息可靠性
+消息可靠性
+-------------------
 >业务人员在投递/消费时，最好借助三方软件，如：redis|mysql ，持久化该消息状态。避免丢消息或重复消费，也方便跟踪  
 >理论上：事务模式更靠谱，但是跟确认模式差了10倍左右（官方给的是100倍左右）。  
 >建议：对一致性可靠性要求比较高的业务，如：订单业务考虑事务。次级重要的用确认模式，不是太重要的可以正常发送即可。  
 >注：事务模式与确认互斥
 
-#简单压侧效果
+简单压侧效果
+-------------------
 >win7 PHP单进程 循环给rebbitmq发消息  
 >普通模式： 10000条，时间：0.32-0.4     100000条：4.1-3.59 . 官方说每秒10万条，可能LINUX下更快  
 >确认模式： 10000条，时间：0.42-0.5    100000条：5  
 >事务模式： 10000条，时间：2.4-2.7    100000条：好吧，我放弃了。。。超时状态  
 
-#重试机制
+重试机制
+-------------------
 >当一条消息处理过程中发生异常，会被重新发送到队列，以阶梯的形式，可再次读取  
 >如：第一次发生异常该方向会重新回到到队列中但是会在5秒之后才出现，第2次是10秒，第3次是30....     
 >具体阶梯的时间可设置，具体重试次数可设置。能很好的防止网络抖动或者LINUX假死  
 
-#各种配置注意：
+各种配置注意：
+-------------------
 >正常新开一个队列，系统默认最大值为10W条，超出即会丢掉（如配置死信队列会进到死信队列中）  
 >正常新建队列不建议使用定义化参数，比如：开启自动ACK、autoDel(自动删除)、  
 >正常新建队列最好都设置持久化属性，投递消息也是。至少MQ挂了重启，还可以找回数据  
 >设置消息的TTL时，尽量要考虑一但消息堆积过多，还没处理过，部分数据就失效且丢失了  
 >编写consumer一定要做好异常捕获，不然进程一但挂了，消息可是无止境堆积。  
 
-#追踪
+追踪
+-------------------
 >mq不提供太多可追踪的工具，可以使用后台管理系统。但做不到100%  
 >建议，业务方，最好把发送的一些消息在自己业务上做持久化。  
 
-#集群
+集群
+-------------------
 >目前暂时没有集群，到达量后，会开启镜像模式集群，防止单点故障  
 
-#分布式
+分布式
+-------------------
 >暂不支持，到达量后，可配合集群一起使用  
 
-#延迟队列插件  
+延迟队列插件  
+-------------------
 >由erlang编写，实际流程为 用户发送一条延迟消息 插件捕获，存于MnesiaDB，到时间后(erlang+timer)再投递到队列中  
 >rabbitmq server 意外中止，或者手动停止，消息依然存在，且重启后 继续有效。  
 >如果手动禁止该插件，数据会丢失 rabbitmq-plugins disable rabbitmq_delayed_message_exchange  
 >暂不支持  <撤消>功能，业务人员可自行实现，每条send后，SERVER会返回msgId,业务人员可自行判定处理  
 
-#编写consuer注意事项
+编写consuer注意事项
+-------------------
 >一定要做好 异常 捕获，否则会导致进程意外退出，消息积压。  
 >进程以守护方式启动，很容易产生内存泄漏或未知异常，建议参考apache的多进程+多线程的方式，当处理了N条消息后，自动重启.  
 
-#异常错误码
+异常错误码
+-------------------
 >参照 rabbitmqBean 基类里的 描述文件  
 

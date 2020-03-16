@@ -111,6 +111,9 @@ class File extends Main {
         }
         $this->_hashType = $type;
     }
+    function getPath(){
+        return $this->_path;
+    }
     //====================以上可对外开放======================
 
     //初始化路径
@@ -131,11 +134,6 @@ class File extends Main {
 //        $this->_writePath .=  "/".$category;
         $this->checkPathAndMkdir();
     }
-
-    function getPath(){
-        return $this->_path;
-    }
-
     //在基目录下，新建一个文件，记录所有类型的日志，可以看成是一个：总日志文件
     function totalRecord($info){
         if(!$this->_totalRecord)
@@ -158,7 +156,7 @@ class File extends Main {
     }
 
     function writeFile($pathFile,$info){
-        if(!isset($this->_fd[md5($pathFile)])){
+        if(empty($this->_fd[md5($pathFile)])){
             $this->_fd[md5($pathFile)] = fopen($pathFile,"a+");
         }
         fwrite(  $this->_fd[md5($pathFile)],$info);
@@ -191,6 +189,7 @@ class File extends Main {
 
     //持久化到文件中
     function flush($info){
+        if (empty($info)) return;
         $this->initPath($this->_level);
         $this->totalRecord($info);
 
@@ -216,11 +215,11 @@ class File extends Main {
 
         $info = $info . $this->_wrap;
 
-//        if(!$this->_buffMem){
+        if(!$this->_buffMem){
             $this->writeFile($filePath,$info);
-//        }else{
-//            $this->_buffContent[] = $info;
-//        }
+        }else{
+            $this->_buffContent[] = $info;
+        }
     }
     //检查设置路径正确否
     function checkBasePath(){

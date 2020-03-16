@@ -175,11 +175,8 @@ class Annotation
 
 	public function getParameters()
 	{
-		if(! $this->parsedAll)
-		{
-			$this->parse();
-			$this->parsedAll = TRUE;
-		}
+		$this->parse();
+
 		return $this->parameters;
 	}
 

@@ -124,7 +124,7 @@ class Di{
                 $paraClassName = $v->getName();
             }
             if(!class_exists($className)){
-                exit("class not exists:".$paraClassName);
+                $this->throwException(502,array($paraClassName));
             }
             $dependInstantClass[$v->getPosition()] = $this->getClassInstance($paraClassName,$className);
         }
@@ -203,7 +203,7 @@ class Di{
             }
 //            $paraClassName =  ucfirst($v->getName());
             if(!class_exists($className)){
-                exit("class not exists:".$paraClassName);
+                $this->throwException(502,array($paraClassName));
             }
             $dependInstantClass[$v->getPosition()] = $this->getClassInstance($paraClassName,$className);
         }
@@ -215,14 +215,12 @@ class Di{
     //实例化一个类
     private function instance($className,$paraInstantList = null,$isInstantiable = 1){
         if($isInstantiable){
-            Log::info("DI new class:".$className);
             if($paraInstantList){
                 $instance = new $className(...$paraInstantList);
             }else{
                 $instance = new $className();
             }
         }else{
-            Log::info("DI getInstance class:".$className);
             if($paraInstantList){
                 $instance = call_user_func_array(array($className,$this->_getInstanceFuncName),$paraInstantList);
             }else{

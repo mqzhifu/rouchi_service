@@ -35,10 +35,18 @@ class Redis extends  RedisAbstract
 
     public function __call($method, $arguments)
     {
-        if (!$this->handler){
+        if (!$this->handler || !$this->beforeUse()){
             $this->connect();
         }
+
         return call_user_func_array([$this->handler, $method], $arguments);
+    }
+
+    private function beforeUse()
+    {
+        $ret = $this->handler->ping('hello');
+
+        return $ret === 'hello' || stripos($ret, "PONG") !== false;
     }
 
 }
