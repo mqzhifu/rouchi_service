@@ -9,18 +9,18 @@ class UserBean extends MessageQueue{
     public $_regTime = 0;
     public $_birthday = 0;
 
-    function __construct($conf = null,$provinder = 'rabbitmq'){
-        parent::__construct($provinder,$conf,3);
+    function __construct($conf = null,$provinder = 'rabbitmq',$debugMode = 0){
+        parent::__construct($provinder,$conf,$debugMode);
     }
 
-    function publishTx($bean){
-        $this->transactionStart();
-        try{
-            $this->send( $bean );
-            $this->transactionCommit();
-        }catch (\Exception $e){
-            $this->transactionCommit();
-        }
-    }
+//    function publishTx($bean){
+//        $this->transactionStart();
+//        try{
+//            $this->send( $bean );
+//            $this->transactionCommit();
+//        }catch (\Exception $e){
+//            $this->transactionCommit();
+//        }
+//    }
 
 }

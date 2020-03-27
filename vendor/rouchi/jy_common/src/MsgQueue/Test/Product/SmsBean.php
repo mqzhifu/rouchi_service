@@ -7,8 +7,8 @@ class SmsBean extends MessageQueue{
     public $_type = "";
     public $_msg = "";
 
-    function __construct($conf = null,$provinder = 'rabbitmq'){
-        parent::__construct($provinder,$conf,3);
+    function __construct($conf = null,$provinder = 'rabbitmq',$debug = 0){
+        parent::__construct($provinder,$conf,$debug);
     }
 
 }

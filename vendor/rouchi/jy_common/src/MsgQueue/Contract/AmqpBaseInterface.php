@@ -2,7 +2,7 @@
 namespace Jy\Common\MsgQueue\Contract;
 
 interface AmqpBaseInterface{
-    function getChannel();
+//    function getChannel();
     function confirmSelectMode();//切换确认模式
     function txSelect();//切换事务模式
     function txCommit();//事务提交

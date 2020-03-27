@@ -28,6 +28,10 @@ class Redis extends  RedisAbstract
         if ($config["password"]) {
             $this->handler->auth($config["password"]);
         }
+        if (isset($config["database"])) {
+            $this->handler->select($config["database"]);
+        }
+
         if (!$fd) {
             throw new \Exception("redis 连接失败", [$config['host'], $config['port']]);
         }

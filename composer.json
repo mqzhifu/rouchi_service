@@ -11,6 +11,7 @@
   ],
   "require": {
     "php": "^7.2",
+    "php-amqplib/php-amqplib": "^2.11.0",
     "rouchi/jy_core": "*",
     "rouchi/jy_db": "*",
     "rouchi/jy_config": "*",
@@ -18,17 +19,12 @@
     "rouchi/jy_log": "*",
     "rouchi/jy_redis": "*"
   },
-"autoload": {
-"psr-4" : {
-"Rouchi\\" : ""
-}
-},
-"repositories": [
-{
-"type": "composer",
-"url": "https://packagist.rouchi.com/"
-}
-],
+  "repositories": {
+    "packagist": {
+      "type": "composer",
+      "url": "https://packagist.rouchi.com"
+    }
+  },
   "config": {
     "secure-http": false
   }

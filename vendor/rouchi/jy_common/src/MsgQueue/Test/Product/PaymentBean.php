@@ -7,8 +7,8 @@ class PaymentBean extends MessageQueue{
     public $_type = "";
     public $_orderId = 0;
 
-    function __construct($conf = null,$provinder = 'rabbitmq'){
-        parent::__construct($provinder,$conf,3);
+    function __construct($conf = null,$provinder = 'rabbitmq',$debugMode = 0){
+        parent::__construct($provinder,$conf,$debugMode);
     }
 
 }

@@ -188,6 +188,7 @@ class Tools{
                 }
                 $this->_rabbitMq->setQueue($queue['name'],$arguments);
 
+
                 $bind_routing_key = "";
                 if($this->keyIssetExist($queue,'bind_routing_key')){
                     $bind_routing_key = $queue['bind_routing_key'];

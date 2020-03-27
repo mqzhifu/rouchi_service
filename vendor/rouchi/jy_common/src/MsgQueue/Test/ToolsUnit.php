@@ -38,6 +38,7 @@ class ToolsUnit extends  MessageQueue{
             $TestConfig->clearByProject($pid);
         }
 
+
         $TestConfig->initProjectExchangeQueue($pid);
         exit;
     }

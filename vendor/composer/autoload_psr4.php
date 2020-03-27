@@ -6,7 +6,7 @@ $vendorDir = dirname(dirname(__FILE__));
 $baseDir = dirname($vendorDir);
 
 return array(
-    'Rouchi\\' => array($baseDir . '/'),
+    'phpseclib\\' => array($vendorDir . '/phpseclib/phpseclib/phpseclib'),
     'PhpAmqpLib\\' => array($vendorDir . '/php-amqplib/php-amqplib/PhpAmqpLib'),
     'Jy\\Redis\\' => array($vendorDir . '/rouchi/jy_redis/src'),
     'Jy\\Log\\' => array($vendorDir . '/rouchi/jy_log/src'),

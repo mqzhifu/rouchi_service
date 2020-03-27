@@ -171,7 +171,7 @@ $GLOBALS['mqConfig'] = array(
                             'x-expires'=>0,//整个队列失效时间
                             'x-message-ttl'=>0,//所有进入该队列消息的，TTL时效
                             'x-max-length'=>100000,
-                            'x-dead-letter-exchange'=>'test.header.delay.dead_ex',
+//                            'x-dead-letter-exchange'=>'test.header.delay.dead_ex',
                         ),
                     ),
                     array(
@@ -185,7 +185,7 @@ $GLOBALS['mqConfig'] = array(
                             'x-expires'=>0,//整个队列失效时间
                             'x-message-ttl'=>0,//所有进入该队列消息的，TTL时效
                             'x-max-length'=>100000,
-                            'x-dead-letter-exchange'=>'test.header.delay.dead_ex',
+//                            'x-dead-letter-exchange'=>'test.header.delay.dead_ex',
                         ),
                     ),
                     array(
@@ -199,26 +199,56 @@ $GLOBALS['mqConfig'] = array(
                             'x-expires'=>0,//整个队列失效时间
                             'x-message-ttl'=>0,//所有进入该队列消息的，TTL时效
                             'x-max-length'=>100000,
-                            'x-dead-letter-exchange'=>'test.header.delay.dead_ex',
+//                            'x-dead-letter-exchange'=>'test.header.delay.dead_ex',
+                        ),
+                    ),
+                    array(
+                        'name'=>"test.header.delay.queueMinLengthSms",
+                        'consumerType'=>'email',
+                        "bind_header_map"=>array(
+                            "Jy\Common\MsgQueue\Test\Product\SmsBean"=>"Jy\Common\MsgQueue\Test\Product\SmsBean",
+                            'x-match'=>'any'
+                        ),
+                        'arguments'=>array(
+                            'x-expires'=>0,//整个队列失效时间
+                            'x-message-ttl'=>0,//所有进入该队列消息的，TTL时效
+                            'x-max-length'=>1,
+//                            'x-dead-letter-exchange'=>'test.header.delay.dead_ex',
+                        ),
+                    ),
+
+                    array(
+                        'name'=>"test.header.delay.queueMinLength",
+                        'consumerType'=>'email',
+                        "bind_header_map"=>array(
+                            "Jy\Common\MsgQueue\Test\Product\QueueMinLengthBean"=>"Jy\Common\MsgQueue\Test\Product\QueueMinLengthBean",
+                            'x-match'=>'any'
+                        ),
+                        'arguments'=>array(
+                            'x-expires'=>0,//整个队列失效时间
+                            'x-message-ttl'=>0,//所有进入该队列消息的，TTL时效
+                            'x-max-length'=>1,
+                            'x-overflow'=>'reject-publish',
+//                            'x-dead-letter-exchange'=>'test.header.delay.dead_ex',
                         ),
                     ),
                 ),
             ),
 
-            array("name"=>'test.header.delay.dead_ex','type'=>'fanout',
-                'queue'=>array(
-                    array(
-                        'name'=>"test.header.delay.dead_ex.queue",
-                        'consumerType'=>'',
-                        "bind_header_map"=>null,
-                        'arguments'=>array(
-                            'x-expires'=>0,//整个队列失效时间
-                            'x-message-ttl'=>0,//所有进入该队列消息的，TTL时效
-                            'x-max-length'=>100000,
-                        ),
-                    ),
-                ),
-            ),
+//            array("name"=>'test.header.delay.dead_ex','type'=>'fanout',
+//                'queue'=>array(
+//                    array(
+//                        'name'=>"test.header.delay.dead_ex.queue",
+//                        'consumerType'=>'',
+//                        "bind_header_map"=>null,
+//                        'arguments'=>array(
+//                            'x-expires'=>0,//整个队列失效时间
+//                            'x-message-ttl'=>0,//所有进入该队列消息的，TTL时效
+//                            'x-max-length'=>100000,
+//                        ),
+//                    ),
+//                ),
+//            ),
         ),
     ),
     4=>array("appId"=>4,'name'=>'测试<topic>类型exchange',

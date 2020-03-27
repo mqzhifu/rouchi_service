@@ -14,6 +14,7 @@ if(ENV == 'local'){
 }elseif(ENV == 'online'){
     $conf =['host' => '172.19.158.76', 'port' => 5672, 'user' => 'svc', 'pwd' => '85gsddhg7yd', 'vhost' => '/',];
     $exchangeName = "many.header.delay";
+//    $exchangeName = "test.header.delay";
 }elseif(ENV == 'self'){
     $conf =['host' => '39.107.127.244', 'port' => 5672, 'user' => 'admin', 'pwd' => '123456', 'vhost' => '/',];
     $exchangeName = "test.header.delay";

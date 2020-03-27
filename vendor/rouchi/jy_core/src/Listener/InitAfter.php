@@ -30,9 +30,9 @@ class InitAfter implements EventListenerInterface
             RequestContext::put('request_trace_cs_data', \Jy\App::$app->request->getRequestTraceParams());
             RequestContext::put('request_header_data', \Jy\App::$app->request->getRequestHeaderParams());
 
-            unset($_GET);
-            unset($_POST);
-            unset($_REQUEST);
+            //unset($_GET);
+            //unset($_POST);
+            //unset($_REQUEST);
         }
 
         // 初始化所有场景的$_SERVER变量

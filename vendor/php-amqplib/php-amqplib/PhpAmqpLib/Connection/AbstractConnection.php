@@ -1,28 +1,34 @@
 <?php
 namespace PhpAmqpLib\Connection;
 
-use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Channel\AbstractChannel;
+use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Exception\AMQPConnectionClosedException;
 use PhpAmqpLib\Exception\AMQPHeartbeatMissedException;
 use PhpAmqpLib\Exception\AMQPInvalidFrameException;
-use PhpAmqpLib\Exception\AMQPProtocolConnectionException;
+use PhpAmqpLib\Exception\AMQPIOException;
+use PhpAmqpLib\Exception\AMQPNoDataException;
 use PhpAmqpLib\Exception\AMQPRuntimeException;
+use PhpAmqpLib\Exception\AMQPSocketException;
 use PhpAmqpLib\Exception\AMQPTimeoutException;
+use PhpAmqpLib\Helper\Assert;
+use PhpAmqpLib\Package;
+use PhpAmqpLib\Wire;
 use PhpAmqpLib\Wire\AMQPReader;
 use PhpAmqpLib\Wire\AMQPTable;
 use PhpAmqpLib\Wire\AMQPWriter;
 use PhpAmqpLib\Wire\IO\AbstractIO;
-use PhpAmqpLib\Wire\IO\SocketIO;
-use PhpAmqpLib\Wire\IO\StreamIO;
 
-class AbstractConnection extends AbstractChannel
+abstract class AbstractConnection extends AbstractChannel
 {
-    /** @var array */
+    /**
+     * @var array
+     * @internal
+     */
     public static $LIBRARY_PROPERTIES = array(
-        'product' => array('S', 'AMQPLib'),
+        'product' => array('S', Package::NAME),
         'platform' => array('S', 'PHP'),
-        'version' => array('S', '2.8'),
+        'version' => array('S', Package::VERSION),
         'information' => array('S', ''),
         'copyright' => array('S', ''),
         'capabilities' => array(
@@ -38,7 +44,10 @@ class AbstractConnection extends AbstractChannel
         )
     );
 
-    /** @var AMQPChannel[] */
+    /**
+     * @var AMQPChannel[]
+     * @internal
+     */
     public $channels = array();
 
     /** @var int */
@@ -62,7 +71,7 @@ class AbstractConnection extends AbstractChannel
     /** @var string */
     protected $known_hosts;
 
-    /** @var AMQPReader */
+    /** @var null|AMQPReader */
     protected $input;
 
     /** @var string */
@@ -74,7 +83,10 @@ class AbstractConnection extends AbstractChannel
     /** @var string */
     protected $login_method;
 
-    /** @var string */
+    /**
+     * @var null|string
+     * @deprecated
+     */
     protected $login_response;
 
     /** @var string */
@@ -85,9 +97,6 @@ class AbstractConnection extends AbstractChannel
 
     /** @var float */
     protected $last_frame;
-
-    /** @var SocketIO */
-    protected $sock;
 
     /** @var int */
     protected $channel_max = 65535;
@@ -126,10 +135,22 @@ class AbstractConnection extends AbstractChannel
      * @var array
      * @see prepare_content()
      */
-    private $prepare_content_cache;
+    private $prepare_content_cache = array();
 
     /** @var int Maximal size of $prepare_content_cache */
-    private $prepare_content_cache_max_size;
+    private $prepare_content_cache_max_size = 100;
+
+    /**
+     * Maximum time to wait for channel operations, in seconds
+     * @var float $channel_rpc_timeout
+     */
+    private $channel_rpc_timeout;
+
+    /**
+     * If connection is blocked due to the broker running low on resources.
+     * @var bool
+     */
+    protected $blocked = false;
 
     /**
      * @param string $user
@@ -137,11 +158,12 @@ class AbstractConnection extends AbstractChannel
      * @param string $vhost
      * @param bool $insist
      * @param string $login_method
-     * @param null $login_response
+     * @param null $login_response @deprecated
      * @param string $locale
      * @param AbstractIO $io
      * @param int $heartbeat
      * @param int $connection_timeout
+     * @param float $channel_rpc_timeout
      * @throws \Exception
      */
     public function __construct(
@@ -154,7 +176,8 @@ class AbstractConnection extends AbstractChannel
         $locale = 'en_US',
         AbstractIO $io,
         $heartbeat = 0,
-        $connection_timeout = 0
+        $connection_timeout = 0,
+        $channel_rpc_timeout = 0.0
     ) {
         // save the params for the use of __clone
         $this->construct_params = func_get_args();
@@ -163,29 +186,31 @@ class AbstractConnection extends AbstractChannel
         $this->vhost = $vhost;
         $this->insist = $insist;
         $this->login_method = $login_method;
-        $this->login_response = $login_response;
         $this->locale = $locale;
         $this->io = $io;
         $this->heartbeat = $heartbeat;
         $this->connection_timeout = $connection_timeout;
+        $this->channel_rpc_timeout = $channel_rpc_timeout;
 
         if ($user && $password) {
-            $this->login_response = new AMQPWriter();
-            $this->login_response->write_table(array(
-                'LOGIN' => array('S', $user),
-                'PASSWORD' => array('S', $password)
-            ));
+            if ($login_method === 'PLAIN') {
+                $this->login_response = sprintf("\0%s\0%s", $user, $password);
+            } elseif ($login_method === 'AMQPLAIN') {
+                $login_response = new AMQPWriter();
+                $login_response->write_table(array(
+                    'LOGIN' => array('S', $user),
+                    'PASSWORD' => array('S', $password)
+                ));
 
-            // Skip the length
-            $responseValue = $this->login_response->getvalue();
-            $this->login_response = mb_substr($responseValue, 4, mb_strlen($responseValue, 'ASCII') - 4, 'ASCII');
-
+                // Skip the length
+                $responseValue = $login_response->getvalue();
+                $this->login_response = mb_substr($responseValue, 4, mb_strlen($responseValue, 'ASCII') - 4, 'ASCII');
+            } else {
+                throw new \InvalidArgumentException('Unknown login method: ' . $login_method);
+            }
         } else {
             $this->login_response = null;
         }
-
-        $this->prepare_content_cache = array();
-        $this->prepare_content_cache_max_size = 100;
 
         // Lazy Connection waits on connecting
         if ($this->connectOnConstruct()) {
@@ -198,6 +223,7 @@ class AbstractConnection extends AbstractChannel
      */
     protected function connect()
     {
+        $this->blocked = false;
         try {
             // Loop until we connect
             while (!$this->isConnected()) {
@@ -205,15 +231,17 @@ class AbstractConnection extends AbstractChannel
                 $this->setIsConnected(true);
 
                 // Connect the socket
-                $this->getIO()->connect();
+                $this->io->connect();
 
                 $this->channels = array();
                 // The connection object itself is treated as channel 0
                 parent::__construct($this, 0);
 
-                $this->input = new AMQPReader(null, $this->getIO());
+                $this->input = new AMQPReader(null, $this->io);
 
-                $this->write($this->amqp_protocol_header);
+                $this->write($this->constants->getHeader());
+                // assume frame was sent successfully, used in $this->wait_channel()
+                $this->last_frame = microtime(true);
                 $this->wait(array($this->waitHelper->get_wait('connection.start')),false,$this->connection_timeout);
                 $this->x_start_ok(
                     $this->getLibraryProperties(),
@@ -227,16 +255,13 @@ class AbstractConnection extends AbstractChannel
                     $this->wait(array(
                         $this->waitHelper->get_wait('connection.secure'),
                         $this->waitHelper->get_wait('connection.tune')
-                    ));
+                    ), false, $this->connection_timeout);
                 }
 
                 $host = $this->x_open($this->vhost, '', $this->insist);
                 if (!$host) {
                     //Reconnected
-                    if ($this->io instanceof StreamIO)
-                    {
-                        $this->getIO()->reenableHeartbeat();
-                    }
+                    $this->io->reenableHeartbeat();
                     return null; // we weren't redirected
                 }
 
@@ -251,6 +276,8 @@ class AbstractConnection extends AbstractChannel
             // Something went wrong, set the connection status
             $this->setIsConnected(false);
             $this->closeChannels();
+            $this->close_input();
+            $this->close_socket();
             throw $e; // Rethrow exception
         }
     }
@@ -264,7 +291,7 @@ class AbstractConnection extends AbstractChannel
         // Try to close the AMQP connection
         $this->safeClose();
         // Reconnect the socket/stream then AMQP
-        $this->getIO()->reconnect();
+        $this->io->close();
         $this->setIsConnected(false); // getIO can initiate the connection setting via LazyConnection, set it here to be sure
         $this->connect();
     }
@@ -290,7 +317,7 @@ class AbstractConnection extends AbstractChannel
     protected function safeClose()
     {
         try {
-            if (isset($this->input) && $this->input) {
+            if (null !== $this->input) {
                 $this->close();
             }
         } catch (\Exception $e) {
@@ -305,7 +332,15 @@ class AbstractConnection extends AbstractChannel
      */
     public function select($sec, $usec = 0)
     {
-        return $this->getIO()->select($sec, $usec);
+        try {
+            return $this->io->select($sec, $usec);
+        } catch (AMQPConnectionClosedException $e) {
+            $this->do_close();
+            throw $e;
+        } catch (AMQPRuntimeException $e) {
+            $this->setIsConnected(false);
+            throw $e;
+        }
     }
 
     /**
@@ -321,9 +356,9 @@ class AbstractConnection extends AbstractChannel
 
     protected function close_input()
     {
-        $this->debug->debug_msg('closing input');
+        $this->debug && $this->debug->debug_msg('closing input');
 
-        if (!is_null($this->input)) {
+        if (null !== $this->input) {
             $this->input->close();
             $this->input = null;
         }
@@ -331,22 +366,22 @@ class AbstractConnection extends AbstractChannel
 
     protected function close_socket()
     {
-        $this->debug->debug_msg('closing socket');
-
-        if (!is_null($this->getIO())) {
-            $this->getIO()->close();
-        }
+        $this->debug && $this->debug->debug_msg('closing socket');
+        $this->io->close();
     }
 
     /**
-     * @param $data
+     * @param string $data
      */
     public function write($data)
     {
         $this->debug->debug_hexdump($data);
 
         try {
-            $this->getIO()->write($data);
+            $this->io->write($data);
+        } catch (AMQPConnectionClosedException $e) {
+            $this->do_close();
+            throw $e;
         } catch (AMQPRuntimeException $e) {
             $this->setIsConnected(false);
             throw $e;
@@ -355,6 +390,8 @@ class AbstractConnection extends AbstractChannel
 
     protected function do_close()
     {
+        $this->frame_queue = [];
+        $this->method_queue = [];
         $this->setIsConnected(false);
         $this->close_input();
         $this->close_socket();
@@ -384,7 +421,7 @@ class AbstractConnection extends AbstractChannel
      * @param string $body
      * @param AMQPWriter $pkt
      */
-    public function send_content($channel, $class_id, $weight, $body_size, $packed_properties, $body, $pkt = null)
+    public function send_content($channel, $class_id, $weight, $body_size, $packed_properties, $body, $pkt)
     {
         $this->prepare_content($channel, $class_id, $weight, $body_size, $packed_properties, $body, $pkt);
         $this->write($pkt->getvalue());
@@ -402,7 +439,7 @@ class AbstractConnection extends AbstractChannel
      * @param AMQPWriter $pkt
      * @return AMQPWriter
      */
-    public function prepare_content($channel, $class_id, $weight, $body_size, $packed_properties, $body, $pkt = null)
+    public function prepare_content($channel, $class_id, $weight, $body_size, $packed_properties, $body, $pkt)
     {
         $pkt = $pkt ?: new AMQPWriter();
 
@@ -507,7 +544,7 @@ class AbstractConnection extends AbstractChannel
     /**
      * Waits for a frame from the server
      *
-     * @param int $timeout
+     * @param int|float|null $timeout
      * @return array
      * @throws \Exception
      * @throws \PhpAmqpLib\Exception\AMQPTimeoutException
@@ -515,8 +552,7 @@ class AbstractConnection extends AbstractChannel
      */
     protected function wait_frame($timeout = 0)
     {
-        if (is_null($this->input))
-        {
+        if (null === $this->input) {
             $this->setIsConnected(false);
             throw new AMQPConnectionClosedException('Broken pipe or closed connection');
         }
@@ -531,8 +567,7 @@ class AbstractConnection extends AbstractChannel
             );
 
             $frame_type = $this->wait_frame_reader->read_octet();
-            $class = self::$PROTOCOL_CONSTANTS_CLASS;
-            if (!array_key_exists($frame_type, $class::$FRAME_TYPES)) {
+            if (!$this->constants->isFrameType($frame_type)) {
                 throw new AMQPInvalidFrameException('Invalid frame type ' . $frame_type);
             }
             $channel = $this->wait_frame_reader->read_short();
@@ -545,8 +580,18 @@ class AbstractConnection extends AbstractChannel
             $ch = $this->wait_frame_reader->read_octet();
 
         } catch (AMQPTimeoutException $e) {
-            $this->input->setTimeout($currentTimeout);
+            if ($this->input) {
+                $this->input->setTimeout($currentTimeout);
+            }
             throw $e;
+        } catch (AMQPNoDataException $e) {
+            if ($this->input) {
+                $this->input->setTimeout($currentTimeout);
+            }
+            throw $e;
+        } catch (AMQPConnectionClosedException $exception) {
+            $this->do_close();
+            throw $exception;
         }
 
         $this->input->setTimeout($currentTimeout);
@@ -565,7 +610,7 @@ class AbstractConnection extends AbstractChannel
      * Waits for a frame from the server destined for a particular channel.
      *
      * @param string $channel_id
-     * @param int $timeout
+     * @param int|float|null $timeout
      * @return array
      */
     protected function wait_channel($channel_id, $timeout = 0)
@@ -573,12 +618,11 @@ class AbstractConnection extends AbstractChannel
         // Keeping the original timeout unchanged.
         $_timeout = $timeout;
         while (true) {
-            $now = time();
+            $start = microtime(true);
             try {
                 list($frame_type, $frame_channel, $payload) = $this->wait_frame($_timeout);
-            }
-            catch ( AMQPTimeoutException $e ) {
-                if ( $this->heartbeat && microtime(true) - ($this->heartbeat*2) > $this->last_frame ) {
+            } catch (AMQPTimeoutException $e) {
+                if ($this->heartbeat && $this->last_frame && microtime(true) - ($this->heartbeat * 2) > $this->last_frame) {
                     $this->debug->debug_msg("missed server heartbeat (at threshold * 2)");
                     $this->setIsConnected(false);
                     throw new AMQPHeartbeatMissedException("Missed server heartbeat");
@@ -593,7 +637,7 @@ class AbstractConnection extends AbstractChannel
                 // skip heartbeat frames and reduce the timeout by the time passed
                 $this->debug->debug_msg("received server heartbeat");
                 if($_timeout > 0) {
-                    $_timeout -= time() - $now;
+                    $_timeout -= $this->last_frame - $start;
                     if($_timeout <= 0) {
                         // If timeout has been reached, throw the exception without calling wait_frame
                         throw new AMQPTimeoutException("Timeout waiting on channel");
@@ -601,26 +645,25 @@ class AbstractConnection extends AbstractChannel
                 }
                 continue;
 
-            } else {
+            }
 
-                if ($frame_channel == $channel_id) {
-                    return array($frame_type, $payload);
-                }
+            if ($frame_channel == $channel_id) {
+                return array($frame_type, $payload);
+            }
 
-                // Not the channel we were looking for.  Queue this frame
-                //for later, when the other channel is looking for frames.
-                // Make sure the channel still exists, it could have been
-                // closed by a previous Exception.
-                if (isset($this->channels[$frame_channel])) {
-                    array_push($this->channels[$frame_channel]->frame_queue, array($frame_type, $payload));
-                }
+            // Not the channel we were looking for.  Queue this frame
+            //for later, when the other channel is looking for frames.
+            // Make sure the channel still exists, it could have been
+            // closed by a previous Exception.
+            if (isset($this->channels[$frame_channel])) {
+                array_push($this->channels[$frame_channel]->frame_queue, array($frame_type, $payload));
+            }
 
-                // If we just queued up a method for channel 0 (the Connection
-                // itself) it's probably a close method in reaction to some
-                // error, so deal with it right away.
-                if (($frame_type == 1) && ($frame_channel == 0)) {
-                    $this->wait();
-                }
+            // If we just queued up a method for channel 0 (the Connection
+            // itself) it's probably a close method in reaction to some
+            // error, so deal with it right away.
+            if ($frame_type === 1 && $frame_channel === 0) {
+                $this->wait();
             }
         }
     }
@@ -639,7 +682,7 @@ class AbstractConnection extends AbstractChannel
         }
 
         $channel_id = $channel_id ? $channel_id : $this->get_free_channel_id();
-        $ch = new AMQPChannel($this->connection, $channel_id);
+        $ch = new AMQPChannel($this, $channel_id, true, $this->channel_rpc_timeout);
         $this->channels[$channel_id] = $ch;
 
         return $ch;
@@ -655,46 +698,51 @@ class AbstractConnection extends AbstractChannel
      */
     public function close($reply_code = 0, $reply_text = '', $method_sig = array(0, 0))
     {
-        if ($this->io instanceof StreamIO)
-        {
-            $this->io->disableHeartbeat();
-        }
-
+        $result = null;
+        $this->io->disableHeartbeat();
         if (empty($this->protocolWriter) || !$this->isConnected()) {
-            return null;
+            return $result;
         }
 
-        $this->closeChannels();
-
-        list($class_id, $method_id, $args) = $this->protocolWriter->connectionClose(
-            $reply_code,
-            $reply_text,
-            $method_sig[0],
-            $method_sig[1]
-        );
-        $this->send_method_frame(array($class_id, $method_id), $args);
+        try {
+            $this->closeChannels();
+            list($class_id, $method_id, $args) = $this->protocolWriter->connectionClose(
+                $reply_code,
+                $reply_text,
+                $method_sig[0],
+                $method_sig[1]
+            );
+            $this->send_method_frame(array($class_id, $method_id), $args);
+            $result = $this->wait(
+                array($this->waitHelper->get_wait('connection.close_ok')),
+                false,
+                $this->connection_timeout
+            );
+        } catch (\Exception $exception) {
+            $this->do_close();
+            throw $exception;
+        }
 
         $this->setIsConnected(false);
 
-        return $this->wait(array(
-            $this->waitHelper->get_wait('connection.close_ok')
-        ),false,$this->connection_timeout);
+        return $result;
     }
 
     /**
      * @param AMQPReader $reader
-     * @throws \PhpAmqpLib\Exception\AMQPProtocolConnectionException
+     * @throws AMQPConnectionClosedException
      */
     protected function connection_close(AMQPReader $reader)
     {
-        $reply_code = $reader->read_short();
-        $reply_text = $reader->read_shortstr();
-        $class_id = $reader->read_short();
-        $method_id = $reader->read_short();
+        $code = (int)$reader->read_short();
+        $reason = $reader->read_shortstr();
+        $class = $reader->read_short();
+        $method = $reader->read_short();
+        $reason .= sprintf('(%s, %s)', $class, $method);
 
         $this->x_close_ok();
 
-        throw new AMQPProtocolConnectionException($reply_code, $reply_text, array($class_id, $method_id));
+        throw new AMQPConnectionClosedException($reason, $code);
     }
 
     /**
@@ -710,10 +758,8 @@ class AbstractConnection extends AbstractChannel
 
     /**
      * Confirm a connection close
-     *
-     * @param AMQPReader $args
      */
-    protected function connection_close_ok($args)
+    protected function connection_close_ok()
     {
         $this->do_close();
     }
@@ -736,7 +782,7 @@ class AbstractConnection extends AbstractChannel
             $this->waitHelper->get_wait('connection.open_ok')
         );
 
-        if ($this->protocolVersion == '0.8') {
+        if ($this->protocolVersion === Wire\Constants080::VERSION) {
             $wait[] = $this->waitHelper->get_wait('connection.redirect');
         }
 
@@ -780,7 +826,7 @@ class AbstractConnection extends AbstractChannel
      */
     protected function connection_secure($args)
     {
-        $challenge = $args->read_longstr();
+        $args->read_longstr();
     }
 
     /**
@@ -847,7 +893,7 @@ class AbstractConnection extends AbstractChannel
 
         $v = $args->read_long();
         if ($v) {
-            $this->frame_max = $v;
+            $this->frame_max = (int)$v;
         }
 
         // use server proposed value if not set
@@ -876,7 +922,8 @@ class AbstractConnection extends AbstractChannel
     }
 
     /**
-     * @return SocketIO
+     * @return resource
+     * @deprecated No direct access to communication socket should be available.
      */
     public function getSocket()
     {
@@ -885,10 +932,24 @@ class AbstractConnection extends AbstractChannel
 
     /**
      * @return \PhpAmqpLib\Wire\IO\AbstractIO
+     * @deprecated
      */
     public function getIO()
     {
         return $this->io;
+    }
+
+    /**
+     * Check connection heartbeat if enabled.
+     * @throws AMQPHeartbeatMissedException If too much time passed since last connection activity.
+     * @throws AMQPConnectionClosedException If connection was closed due to network issues or timeouts.
+     * @throws AMQPSocketException If connection was already closed.
+     * @throws AMQPTimeoutException If heartbeat write takes too much time.
+     * @throws AMQPIOException If other connection problems occurred.
+     */
+    public function checkHeartBeat()
+    {
+        $this->io->check_heartbeat();
     }
 
     /**
@@ -898,28 +959,30 @@ class AbstractConnection extends AbstractChannel
      */
     protected function connection_blocked(AMQPReader $args)
     {
+        $this->blocked = true;
         // Call the block handler and pass in the reason
         $this->dispatch_to_handler($this->connection_block_handler, array($args->read_shortstr()));
     }
 
     /**
      * Handles connection unblocked notifications
-     *
-     * @param AMQPReader $args
      */
-    protected function connection_unblocked(AMQPReader $args)
+    protected function connection_unblocked()
     {
+        $this->blocked = false;
         // No args to an unblock event
-        $this->dispatch_to_handler($this->connection_unblock_handler, array());
+        $this->dispatch_to_handler($this->connection_unblock_handler);
     }
 
     /**
      * Sets a handler which is called whenever a connection.block is sent from the server
      *
      * @param callable $callback
+     * @throws \InvalidArgumentException if $callback is not callable
      */
     public function set_connection_block_handler($callback)
     {
+        Assert::isCallable($callback);
         $this->connection_block_handler = $callback;
     }
 
@@ -927,9 +990,11 @@ class AbstractConnection extends AbstractChannel
      * Sets a handler which is called whenever a connection.block is sent from the server
      *
      * @param callable $callback
+     * @throws \InvalidArgumentException if $callback is not callable
      */
     public function set_connection_unblock_handler($callback)
     {
+        Assert::isCallable($callback);
         $this->connection_unblock_handler = $callback;
     }
 
@@ -940,7 +1005,17 @@ class AbstractConnection extends AbstractChannel
      */
     public function isConnected()
     {
-        return (bool) $this->is_connected;
+        return $this->is_connected;
+    }
+
+    /**
+     * Get the connection blocked state.
+     * @return bool
+     * @since v2.12.0
+     */
+    public function isBlocked()
+    {
+        return $this->blocked;
     }
 
     /**
@@ -999,15 +1074,25 @@ class AbstractConnection extends AbstractChannel
         return self::$LIBRARY_PROPERTIES;
     }
 
+    /**
+     * @param array $hosts
+     * @param array $options
+     *
+     * @return mixed
+     * @throws \Exception
+     */
     public static function create_connection($hosts, $options = array()){
-        $latest_exception = null;
-        for($i = 0; $i < count($hosts); $i++) {
-            AbstractConnection::validate_host($hosts[$i]);
-            $host = $hosts[$i]['host'];
-            $port = $hosts[$i]['port'];
-            $user = $hosts[$i]['user'];
-            $password = $hosts[$i]['password'];
-            $vhost = isset($hosts[$i]['vhost']) ? $hosts[$i]['vhost'] : "/";
+        if (!is_array($hosts) || count($hosts) < 1) {
+            throw new \InvalidArgumentException('An array of hosts are required when attempting to create a connection');
+        }
+
+        foreach ($hosts as $hostdef) {
+            AbstractConnection::validate_host($hostdef);
+            $host = $hostdef['host'];
+            $port = $hostdef['port'];
+            $user = $hostdef['user'];
+            $password = $hostdef['password'];
+            $vhost = isset($hostdef['vhost']) ? $hostdef['vhost'] : "/";
             try {
                 $conn = static::try_create_connection($host, $port, $user, $password, $vhost, $options);
                 return $conn;

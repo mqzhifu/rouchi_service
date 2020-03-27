@@ -9,7 +9,7 @@ class OrderBean extends MessageQueue{
     public $_num = 0;//购买数量
     public $_uid = 0;//用户ID
 
-    function __construct($conf = null,$provinder = 'rabbitmq'){
-        parent::__construct($provinder,$conf,3);
+    function __construct($conf = null,$provinder = 'rabbitmq',$debugMode = 0){
+        parent::__construct($provinder,$conf,$debugMode);
     }
 }

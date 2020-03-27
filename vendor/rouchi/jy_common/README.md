@@ -143,12 +143,12 @@ Valid::match($data,$rule);
 rabbitMq 队列
 ============
 准备工作：
->依赖包 "php-amqplib/php-amqplib" &&  rouchi/Jy_config && rouchi/Jy_log" composer update  
+>依赖包 "php-amqplib/php-amqplib" && rouchi/Jy_log" composer update  
 >消费者模式，开启进程，是属于守护进程，最好是CLI方式启动。且 max_execution_time set_time_limit 均为0  
 >消费者模式，建议使用非win系统，打开php 扩展：pcntl posix扩展.   
->配置文件：需要提前写好，config 包 会调用 ,DEMO如下：  
+>配置文件：默认情况下，会读取conf项目中的php_base目录 下的 rabbitqueue.php
 ```javascript
-rabbitmq.php
+rabbitqueue.php
 
 return [
     'rabbitmq'=>[

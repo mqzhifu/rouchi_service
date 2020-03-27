@@ -199,8 +199,8 @@ abstract class Main  implements MainInterface, PsrLoggerInterface {
         foreach ($format as $k=>$rule){
             $rule = trim($rule);
             switch ($rule){
-                case 'context':
-                    $info['context'] = $message;
+                case 'message':
+                    $info['message'] = $message;
 //                case 'rid':
 //                    $info .= $this->makeRequestId() . $this->_delimiter;
 //                    break;
