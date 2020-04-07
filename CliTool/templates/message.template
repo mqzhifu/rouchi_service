@@ -1,0 +1,25 @@
+<?php
+/**
+ * @user: auto generate
+ * @date : %s
+ */
+
+namespace %s;
+
+class %sMessage
+{
+%s
+
+    public function apply(array $data)
+    {
+        foreach ($data as $key => $value) {
+            $this->$key = $value;
+        }
+        return $this;
+    }
+
+    public function toArray()
+    {
+        return json_decode(json_encode($this),true);
+    }
+}

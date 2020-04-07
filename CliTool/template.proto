@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+service Order {
+    rpc create (OrderCreateRequest) returns (OrderCreateResponse) {}
+    rpc create2 (OrderCreateRequest) returns (OrderCreateResponse) {}
+    rpc create3 (OrderCreateRequest) returns (OrderCreateResponse) {}
+}
+
+message OrderCreateRequest {
+    int64 student_id = 1;   //require|int|numberMin:1
+    int64 parent_id = 2;    //require|int|numberMin:1
+    int32 operator = 3;     //require|int|numberMin:1
+    int32 source = 4;       //require|int|numberMin:1
+    string memo = 5;        //lengthMax:200
+    int32 staging = 6;      //int
+    repeated OrderCreateRequestItem items = 7;
+    OrderCreateRequestItemExtend extend = 8;
+}
+message OrderCreateRequestItem {
+    int64 id = 1;           //require|int|numberMin:1
+    int32 type = 2;         //require|int|numberMin:1
+    int32 price = 3;        //require|int|numberMin:1
+    int32 amount = 4;       //require|int|numberMin:1
+}
+message OrderCreateRequestItemExtend {
+    int64 id = 1;           //require|int|numberMin:1
+}
+message OrderCreateResponse {
+    int64 order_id = 1;
+    string order_no = 2;
+}

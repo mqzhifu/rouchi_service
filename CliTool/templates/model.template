@@ -1,0 +1,31 @@
+<?php
+/**
+ * @user: auto generate
+ * @date : %s
+ */
+
+namespace %s;
+
+
+use Rouchi\Models\BaseModel;
+
+class %s extends BaseModel
+{
+    const ACTIVE_DELETE = 0;
+    const ACTIVE_NORMAL = 1;
+    //临时内容arr，用于保存上次的全部数据，用于update的增量更新. 赋值节点为插入、apply、更新时.
+    private $_tempArr = array();
+
+    //表名
+    public $_tableName = '%s';
+
+    //属性，与数据表一致，默认值均为null，意为未设置
+    public $id = null;                          //所有表必须有自增ID
+    protected $active = self::ACTIVE_NORMAL;    //所有表必须包含软删temp，禁止外部获取
+
+    //=========自动生成部分=========//
+%s
+    //全属性一维arr，避免反射
+    public $_colsArr = array('id','active',%s);
+    //=========自动生成部分结束=========//
+}

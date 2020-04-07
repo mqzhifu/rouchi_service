@@ -1,0 +1,23 @@
+<?php
+/**
+ * @user: auto generate
+ * @date : %s
+ */
+
+namespace %s;
+
+use Jy\Controller;
+%s
+
+class %sController extends Controller
+{
+    %s
+
+    public function __construct()
+    {
+        parent::__construct();
+        %s
+    }
+
+%s
+}

@@ -1,0 +1,18 @@
+<?php
+/**
+ * @user: auto generate
+ * @date : %s
+ */
+
+namespace %s;
+
+%s
+
+class %sService
+{
+    public function __construct()
+    {
+    }
+
+%s
+}

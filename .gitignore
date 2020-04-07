@@ -1,0 +1,6 @@
+/.idea
+/vendor
+/Log/*
+/composer.lock
+/composer.json
+/CliTool/output

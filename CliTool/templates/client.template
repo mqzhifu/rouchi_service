@@ -1,0 +1,32 @@
+<?php
+/**
+ * @user: auto generate
+ * @date : %s
+ * @file : %s.php
+ */
+
+namespace %s;
+
+
+use Jy\Client\ClientProcessor;
+use Jy\Client\Services\BaseClient;
+
+class %s extends BaseClient
+{
+    protected $_processor = null;
+
+    protected $service = '%s';
+    protected $controller = '%s';
+    protected $extend = '%s';
+
+    public function __construct(ClientProcessor $processor = null)
+    {
+		if ($processor != null) {
+			$this->_processor = $processor;
+		}else{
+			$this->_processor = new ClientProcessor();
+		}
+    }
+
+%s
+}
